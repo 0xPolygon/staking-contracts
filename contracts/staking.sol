@@ -8,8 +8,8 @@ contract Staking {
 
     // Properties
     address[] public _validators;
-    mapping(address => uint256) _addressToStakedAmount;
     mapping(address => bool) _addressToIsValidator;
+    mapping(address => uint256) _addressToStakedAmount;
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
 
