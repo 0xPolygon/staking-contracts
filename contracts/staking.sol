@@ -6,18 +6,12 @@ contract Staking {
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
 
-    // Type
-    struct Staker {
-        bool isValidator;
-        address addr;
-        uint256 amount;
-        uint256 index;
-    }
-
     // Properties
     address[] public _validators;
-    mapping(address => Staker) public _stakers;
-    uint256 public _stakedAmount = 0;
+    mapping(address => uint256) _addressToStakedAmount;
+    mapping(address => bool) _addressToIsValidator;
+    mapping(address => uint256) _addressToValidatorIndex;
+    uint256 _stakedAmount;
 
     // Event
     event Staked(address indexed account, uint256 amount);
@@ -26,18 +20,14 @@ contract Staking {
 
     // modifiers
     modifier onlyStaker() {
-        Staker memory staker = _stakers[msg.sender];
         require(
-            staker.addr != address(0) && staker.amount > 0,
+            _addressToStakedAmount[msg.sender] > 0,
             "Only staker can call function"
         );
         _;
     }
 
     constructor() {}
-
-    // fallback
-    // receive() external payable {}
 
     // view function
     function stakedAmount() public view returns (uint256) {
@@ -51,31 +41,27 @@ contract Staking {
     // public function
     function stake() public payable {
         _stakedAmount += msg.value;
+        _addressToStakedAmount[msg.sender] += msg.value;
 
-        Staker storage staker = _stakers[msg.sender];
-        if (staker.addr == address(0)) {
-            staker.addr = msg.sender;
-            staker.amount = 0;
-        }
-        staker.amount += msg.value;
-
-        if (!staker.isValidator && staker.amount >= ValidatorThreshold) {
+        if (
+            !_addressToIsValidator[msg.sender] &&
+            _addressToStakedAmount[msg.sender] >= ValidatorThreshold
+        ) {
+            // append to validator set
+            _addressToIsValidator[msg.sender] = true;
+            _addressToValidatorIndex[msg.sender] = _validators.length;
             _validators.push(msg.sender);
-            staker.isValidator = true;
-            staker.index = _validators.length - 1;
         }
 
         emit Staked(msg.sender, msg.value);
     }
 
     function unstake() public onlyStaker {
-        Staker storage staker = _stakers[msg.sender];
-        uint256 amount = staker.amount;
+        uint256 amount = _addressToStakedAmount[msg.sender];
 
-        staker.amount = 0;
-        if (staker.isValidator) {
-            staker.isValidator = false;
-            deleteFromValidators(staker);
+        _addressToStakedAmount[msg.sender] = 0;
+        if (_addressToIsValidator[msg.sender]) {
+            deleteFromValidators(msg.sender);
         }
 
         _stakedAmount -= amount;
@@ -83,27 +69,25 @@ contract Staking {
         emit Unstaked(msg.sender, amount);
     }
 
-    function deleteFromValidators(Staker memory staker) private {
+    function deleteFromValidators(address staker) private {
         require(
-            staker.index < _validators.length &&
-                _validators[staker.index] == staker.addr,
+            _addressToValidatorIndex[staker] < _validators.length,
             "index out of range"
         );
+
         // index of removed address
-        uint256 index = staker.index;
+        uint256 index = _addressToValidatorIndex[staker];
         uint256 lastIndex = _validators.length - 1;
 
         if (index != lastIndex) {
             // exchange between the element and last to pop for delete
             address lastAddr = _validators[lastIndex];
-            Staker storage lastStaker = _stakers[lastAddr];
-
-            require(lastStaker.addr != address(0));
-            // exchange
-            lastStaker.index = index;
             _validators[index] = lastAddr;
+            _addressToValidatorIndex[lastAddr] = index;
         }
 
+        _addressToIsValidator[staker] = false;
+        _addressToValidatorIndex[staker] = 0;
         _validators.pop();
     }
 }
