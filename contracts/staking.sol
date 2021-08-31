@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 contract Staking {
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
+    uint32 public constant MinimumRequiredNumValidators = 4;
 
     // Properties
     address[] public _validators;
@@ -68,13 +69,18 @@ contract Staking {
     }
 
     function _unstake() private {
+        require(
+            _validators.length > MinimumRequiredNumValidators,
+            "Number of validators can't be less than MinimumRequiredNumValidators"
+        );
+
         uint256 amount = _addressToStakedAmount[msg.sender];
 
-        _addressToStakedAmount[msg.sender] = 0;
         if (_addressToIsValidator[msg.sender]) {
             _deleteFromValidators(msg.sender);
         }
 
+        _addressToStakedAmount[msg.sender] = 0;
         _stakedAmount -= amount;
         payable(msg.sender).transfer(amount);
         emit Unstaked(msg.sender, amount);
