@@ -36,22 +36,23 @@ contract Staking {
         return _validators;
     }
 
-    // public function
+    // public functions
     receive() external payable {
-        _stake(msg.value);
+        _stake();
     }
 
     function stake() public payable {
-        _stake(msg.value);
+        _stake();
     }
 
     function unstake() public onlyStaker {
         _unstake();
     }
 
-    function _stake(uint256 amount) private {
-        _stakedAmount += amount;
-        _addressToStakedAmount[msg.sender] += amount;
+    // private functions
+    function _stake() private {
+        _stakedAmount += msg.value;
+        _addressToStakedAmount[msg.sender] += msg.value;
 
         if (
             !_addressToIsValidator[msg.sender] &&
@@ -63,7 +64,7 @@ contract Staking {
             _validators.push(msg.sender);
         }
 
-        emit Staked(msg.sender, amount);
+        emit Staked(msg.sender, msg.value);
     }
 
     function _unstake() private {
