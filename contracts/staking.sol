@@ -1,7 +1,5 @@
 pragma solidity ^0.8.7;
 
-import "hardhat/console.sol";
-
 contract Staking {
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
@@ -39,9 +37,21 @@ contract Staking {
     }
 
     // public function
+    receive() external payable {
+        _stake(msg.value);
+    }
+
     function stake() public payable {
-        _stakedAmount += msg.value;
-        _addressToStakedAmount[msg.sender] += msg.value;
+        _stake(msg.value);
+    }
+
+    function unstake() public onlyStaker {
+        _unstake();
+    }
+
+    function _stake(uint256 amount) private {
+        _stakedAmount += amount;
+        _addressToStakedAmount[msg.sender] += amount;
 
         if (
             !_addressToIsValidator[msg.sender] &&
@@ -53,15 +63,15 @@ contract Staking {
             _validators.push(msg.sender);
         }
 
-        emit Staked(msg.sender, msg.value);
+        emit Staked(msg.sender, amount);
     }
 
-    function unstake() public onlyStaker {
+    function _unstake() private {
         uint256 amount = _addressToStakedAmount[msg.sender];
 
         _addressToStakedAmount[msg.sender] = 0;
         if (_addressToIsValidator[msg.sender]) {
-            deleteFromValidators(msg.sender);
+            _deleteFromValidators(msg.sender);
         }
 
         _stakedAmount -= amount;
@@ -69,7 +79,7 @@ contract Staking {
         emit Unstaked(msg.sender, amount);
     }
 
-    function deleteFromValidators(address staker) private {
+    function _deleteFromValidators(address staker) private {
         require(
             _addressToValidatorIndex[staker] < _validators.length,
             "index out of range"
