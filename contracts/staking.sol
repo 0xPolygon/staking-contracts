@@ -24,7 +24,7 @@ contract Staking {
         assembly {
             size := extcodesize(addr)
         }
-        require(size > 0);
+        require(size == 0);
         _;
     }
 
