@@ -1,5 +1,5 @@
 import {ethers} from "hardhat";
-import {Staking} from "../types/staking";
+import {Staking} from "../types/Staking";
 
 const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS ?? '';
 
