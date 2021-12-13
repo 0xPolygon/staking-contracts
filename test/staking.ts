@@ -1,9 +1,8 @@
 import { ethers } from "hardhat";
-import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Staking } from "../types/staking";
-import { Deferrable } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
+import { expect } from "chai";
+import { Staking } from "../types/Staking";
 
 describe("Staking contract", function () {
   let accounts: SignerWithAddress[];
