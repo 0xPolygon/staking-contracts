@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
-import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
+import { expect } from "chai";
 import { Staking } from "../types/Staking";
 
 describe("Staking contract", function () {
@@ -91,14 +92,35 @@ describe("Staking contract", function () {
   });
 
   describe("Unstake", () => {
+    const numInitialValidators = 5;
     const stakedAmount = ethers.utils.parseEther("1");
+    const stake = async (account: SignerWithAddress, value: BigNumber) => {
+      return contract.connect(account).stake({ value });
+    };
     beforeEach(async () => {
-      await contract.stake({ value: stakedAmount });
+      // set required number of validators
+      await Promise.all(
+        accounts
+          .slice(0, numInitialValidators)
+          .map((account) => stake(account, stakedAmount))
+      );
     });
 
     it("should failed if an account is not a staker", async () => {
-      await expect(contract.connect(accounts[1]).unstake()).to.be.revertedWith(
-        "Only staker can call function"
+      await expect(
+        contract.connect(accounts[numInitialValidators]).unstake()
+      ).to.be.revertedWith("Only staker can call function");
+    });
+
+    it("should failed if current number of validators equals to MinimumRequiredNumValidators", async () => {
+      // remove 1 account first
+      await contract.connect(accounts[1]).unstake();
+      // current number of validators should be same to 4 (MinimumRequiredNumValidators)
+      await expect(await contract.validators()).to.have.length(4);
+
+      // cannot remove validator anymore
+      await expect(contract.unstake()).to.be.revertedWith(
+        "Number of validators can't be less than MinimumRequiredNumValidators"
       );
     });
 
@@ -118,32 +140,33 @@ describe("Staking contract", function () {
     it("should remove account from validators", async () => {
       await contract.unstake();
       expect(await contract.validators())
-        .to.have.length(0)
+        .to.have.length(numInitialValidators - 1)
         .not.to.include(accounts[0].address);
     });
 
     it("should exchange between 2 addresses in validators when contract remove validator in the middle of array", async () => {
-      // add more 2 validators
-      await Promise.all([
-        contract.connect(accounts[1]).stake({ value: stakedAmount }),
-        contract.connect(accounts[2]).stake({ value: stakedAmount }),
-      ]);
-
       // make sure validators is in order from oldest
       expect(await contract.validators())
-        .to.have.length(3)
+        .to.have.length(numInitialValidators)
         .and.to.deep.equal([
           accounts[0].address,
           accounts[1].address,
           accounts[2].address,
+          accounts[3].address,
+          accounts[4].address,
         ]);
 
-      // unstake first account
+      // first account's unstake
       await contract.unstake();
       expect(await contract.validators())
-        // [0, 1, 2] => [2, 1]
-        .to.have.length(2)
-        .and.to.deep.equal([accounts[2].address, accounts[1].address]);
+        // [0, 1, 2, 3, 4] => [4, 1, 2, 3]
+        .to.have.length(4)
+        .and.to.deep.equal([
+          accounts[4].address,
+          accounts[1].address,
+          accounts[2].address,
+          accounts[3].address,
+        ]);
     });
   });
 });
