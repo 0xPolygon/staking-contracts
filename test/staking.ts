@@ -1,35 +1,19 @@
 import { ethers } from "hardhat";
-import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MockStaker } from "../types/MockStaker";
 import { BigNumber } from "ethers";
+import { expect } from "chai";
 import { Staking } from "../types/Staking";
 
 describe("Staking contract", function () {
   let accounts: SignerWithAddress[];
   let contract: Staking;
-  let mockStakerContract: MockStaker;
   beforeEach(async () => {
     accounts = await ethers.getSigners();
 
-    const [stakingContractFactory, mockStakerContractFactory] =
-      await Promise.all([
-        ethers.getContractFactory("Staking"),
-        ethers.getContractFactory("MockStaker"),
-      ]);
-
-    contract = (await stakingContractFactory.deploy()) as Staking;
-    mockStakerContract = (await mockStakerContractFactory.deploy(
-      contract.address
-    )) as MockStaker;
-
-    await Promise.all([contract.deployed(), mockStakerContract.deployed()]);
-
-    await accounts[0].sendTransaction({
-      from: accounts[0].address,
-      to: mockStakerContract.address,
-      value: ethers.utils.parseEther("5"),
-    });
+    const contractFactory = await ethers.getContractFactory("Staking");
+    contract = (await contractFactory.deploy()) as Staking;
+    await contract.deployed();
+    contract = contract.connect(accounts[0]);
   });
 
   it("staked amount should be default on deployed", async () => {
@@ -38,12 +22,6 @@ describe("Staking contract", function () {
 
   describe("Stake", () => {
     const value = ethers.utils.parseEther("1");
-
-    it("should reject staking by contract account", async () => {
-      await expect(mockStakerContract.stake(value)).to.be.revertedWith(
-        "Only EOA can call function"
-      );
-    });
 
     it("should increase stakedAmount if account send value to contract", async () => {
       await expect(() => contract.stake({ value })).to.changeEtherBalances(
@@ -78,12 +56,6 @@ describe("Staking contract", function () {
 
     beforeEach(() => {
       account = accounts[0];
-    });
-
-    it("should reject transfer from contract account", async () => {
-      await expect(mockStakerContract.transfer(value)).to.be.revertedWith(
-        "Only EOA can call function"
-      );
     });
 
     it("should increase stakedAmount if account send value to contract", async () => {
@@ -134,13 +106,7 @@ describe("Staking contract", function () {
       );
     });
 
-    it("should reject unstaking by contract account", async () => {
-      await expect(mockStakerContract.unstake()).to.be.revertedWith(
-        "Only EOA can call function"
-      );
-    });
-
-    it("should reject unstaking by non-staker", async () => {
+    it("should failed if an account is not a staker", async () => {
       await expect(
         contract.connect(accounts[numInitialValidators]).unstake()
       ).to.be.revertedWith("Only staker can call function");
