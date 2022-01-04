@@ -1,6 +1,10 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Staking {
+    using Address for address;
+
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
     uint32 public constant MinimumRequiredNumValidators = 4;
@@ -18,6 +22,11 @@ contract Staking {
     event Unstaked(address indexed account, uint256 amount);
 
     // modifiers
+    modifier onlyEOA() {
+        require(!msg.sender.isContract(), "Only EOA can call function");
+        _;
+    }
+
     modifier onlyStaker() {
         require(
             _addressToStakedAmount[msg.sender] > 0,
@@ -38,15 +47,15 @@ contract Staking {
     }
 
     // public functions
-    receive() external payable {
+    receive() external payable onlyEOA {
         _stake();
     }
 
-    function stake() public payable {
+    function stake() public payable onlyEOA {
         _stake();
     }
 
-    function unstake() public onlyStaker {
+    function unstake() public onlyEOA onlyStaker {
         _unstake();
     }
 
