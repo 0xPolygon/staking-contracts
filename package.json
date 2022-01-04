@@ -8,6 +8,7 @@
     "build": "npm run clean && npm run compile",
     "deploy": "hardhat run scripts/deploy.ts --network polygonsdk",
     "stake": "hardhat run scripts/stake.ts --network polygonsdk",
+    "transfer": "hardhat run scripts/transfer.ts --network polygonsdk",
     "unstake": "hardhat run scripts/unstake.ts --network polygonsdk",
     "info": "hardhat run scripts/info.ts --network polygonsdk",
     "test": "npx hardhat test",
