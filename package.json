@@ -6,11 +6,11 @@
   "repository": "https://github.com/0xPolygon/staking-contracts.git",
   "scripts": {
     "build": "npm run clean && npm run compile",
-    "deploy": "hardhat run scripts/deploy.ts --network polygonsdk",
-    "stake": "hardhat run scripts/stake.ts --network polygonsdk",
-    "transfer": "hardhat run scripts/transfer.ts --network polygonsdk",
-    "unstake": "hardhat run scripts/unstake.ts --network polygonsdk",
-    "info": "hardhat run scripts/info.ts --network polygonsdk",
+    "deploy": "hardhat run scripts/deploy.ts --network polygonedge",
+    "stake": "hardhat run scripts/stake.ts --network polygonedge",
+    "transfer": "hardhat run scripts/transfer.ts --network polygonedge",
+    "unstake": "hardhat run scripts/unstake.ts --network polygonedge",
+    "info": "hardhat run scripts/info.ts --network polygonedge",
     "test": "npx hardhat test",
     "clean": "npx hardhat clean",
     "compile": "npx hardhat compile"
