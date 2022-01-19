@@ -12,8 +12,8 @@ const privateKeys = (process.env.PRIVATE_KEYS ?? "").split(",")
 const config: HardhatUserConfig = {
   solidity: "0.8.7",
   networks: {
-    polygonsdk: {
-      url: process.env.POLYGON_SDK_JSONRPC_URL ?? "http://localhost:10002",
+    polygonedge: {
+      url: process.env.JSONRPC_URL ?? "http://localhost:10002",
       accounts: [
         ...privateKeys,
       ],

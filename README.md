@@ -22,7 +22,7 @@ $ npm run build
 $ npm run test
 ```
 
-### Deploy contract to PolygonSDK
+### Deploy contract to Polygon Edge
 
 ```shell
 $ npm run deploy
