@@ -20,6 +20,10 @@ describe("Staking contract", function () {
     expect(await contract.stakedAmount()).to.eq(0);
   });
 
+  it("minimum staked amount should be default on deployed", async () => {
+    expect(await contract.minimumStakedAmount()).to.eq(0);
+  });
+
   describe("Stake", () => {
     const value = ethers.utils.parseEther("1");
 
@@ -28,6 +32,45 @@ describe("Staking contract", function () {
         [accounts[0], contract],
         [value.mul("-1"), value]
       );
+    });
+
+    it("should increase minimumStakedAmount if account send value for the first time to contract", async () => {
+      await contract.stake({ value });
+
+      expect(await contract.minimumStakedAmount()).to.eq(value);
+    });
+
+    it("should keep minimumStakedAmount to its lowest value if account send value for the second time to contract", async () => {
+      await contract.stake({ value });
+      await contract.stake({ value });
+
+      expect(await contract.minimumStakedAmount()).to.eq(value);
+    });
+
+    it("should update minimumStakedAmount to the lowest staked amount by a validator", async () => {
+      // Account #1 stakes 2 ETH
+      const account1Value = ethers.utils.parseEther("2");
+      await contract.stake({ value: account1Value });
+
+      expect(await contract.minimumStakedAmount()).to.eq(account1Value);
+
+      // Use account #2 to send 1.5 ETH, making it the validator with the lowest amount staked in the contract
+      const account2Value = ethers.utils.parseEther("1.5");
+      contract = contract.connect(accounts[1]);
+      await contract.stake({ value: account2Value });
+
+      expect(await contract.minimumStakedAmount()).to.eq(account2Value);
+    });
+
+    it("should not update minimumStakedAmount to an invalid value sent by an account to become a validator", async () => {
+      // Account #1 becomes a validator
+      await contract.stake({ value });
+
+      // Account #2 tries to become a validator, but sends 0 ETH
+      contract = contract.connect(accounts[1]);
+      await contract.stake();
+
+      expect(await contract.minimumStakedAmount()).to.eq(value);
     });
 
     it("should emit Staked event", async () => {

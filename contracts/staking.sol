@@ -15,6 +15,7 @@ contract Staking {
     mapping(address => uint256) _addressToStakedAmount;
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
+    uint256 _minimumStakedAmount;
 
     // Event
     event Staked(address indexed account, uint256 amount);
@@ -40,6 +41,10 @@ contract Staking {
     // view function
     function stakedAmount() public view returns (uint256) {
         return _stakedAmount;
+    }
+
+    function minimumStakedAmount() public view returns (uint256) {
+        return _minimumStakedAmount;
     }
 
     function validators() public view returns (address[] memory) {
@@ -72,6 +77,13 @@ contract Staking {
             _addressToIsValidator[msg.sender] = true;
             _addressToValidatorIndex[msg.sender] = _validators.length;
             _validators.push(msg.sender);
+
+            // Updates the minimum staked amount by a validator
+            // It only happens when a new validator stakes a lower amount than everyone else
+            // or whenever the first validator stakes
+            if (_addressToStakedAmount[msg.sender] < _minimumStakedAmount || _minimumStakedAmount == 0) {
+                _minimumStakedAmount = _addressToStakedAmount[msg.sender];
+            }
         }
 
         emit Staked(msg.sender, msg.value);
