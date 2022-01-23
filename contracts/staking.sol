@@ -16,6 +16,7 @@ contract Staking {
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
     uint256 _minimumStakedAmountByValidator;
+    address _lowestValidator;
 
     // Event
     event Staked(address indexed account, uint256 amount);
@@ -134,6 +135,7 @@ contract Staking {
         for (uint32 i = 1; i < _validators.length; i++) {
             if (_addressToStakedAmount[_validators[i]] < min) {
                 min = _addressToStakedAmount[_validators[i]];
+                _lowestValidator = _validators[i];
             }
         }
         _minimumStakedAmountByValidator = min;
