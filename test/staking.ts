@@ -21,7 +21,7 @@ describe("Staking contract", function () {
   });
 
   it("minimum staked amount should be default on deployed", async () => {
-    expect(await contract.minimumStakedAmount()).to.eq(0);
+    expect(await contract.minimumStakedAmountByValidator()).to.eq(0);
   });
 
   describe("Stake", () => {
@@ -34,35 +34,35 @@ describe("Staking contract", function () {
       );
     });
 
-    it("should increase minimumStakedAmount if account send value for the first time to contract", async () => {
+    it("should increase minimumStakedAmountByValidator if account send value for the first time to contract", async () => {
       await contract.stake({ value });
 
-      expect(await contract.minimumStakedAmount()).to.eq(value);
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(value);
     });
 
-    it("should keep minimumStakedAmount to its lowest value if account send value for the second time to contract", async () => {
+    it("should keep minimumStakedAmountByValidator to its lowest value if account send value for the second time to contract", async () => {
       await contract.stake({ value });
       await contract.stake({ value });
 
-      expect(await contract.minimumStakedAmount()).to.eq(value);
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(ethers.utils.parseEther("2"));
     });
 
-    it("should update minimumStakedAmount to the lowest staked amount by a validator", async () => {
+    it("should update minimumStakedAmountByValidator to the lowest staked amount by a validator", async () => {
       // Account #1 stakes 2 ETH
       const account1Value = ethers.utils.parseEther("2");
       await contract.stake({ value: account1Value });
 
-      expect(await contract.minimumStakedAmount()).to.eq(account1Value);
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(account1Value);
 
       // Use account #2 to send 1.5 ETH, making it the validator with the lowest amount staked in the contract
       const account2Value = ethers.utils.parseEther("1.5");
       contract = contract.connect(accounts[1]);
       await contract.stake({ value: account2Value });
 
-      expect(await contract.minimumStakedAmount()).to.eq(account2Value);
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(account2Value);
     });
 
-    it("should not update minimumStakedAmount to an invalid value sent by an account to become a validator", async () => {
+    it("should not update minimumStakedAmountByValidator to an invalid value sent by an account to become a validator", async () => {
       // Account #1 becomes a validator
       await contract.stake({ value });
 
@@ -70,7 +70,7 @@ describe("Staking contract", function () {
       contract = contract.connect(accounts[1]);
       await contract.stake();
 
-      expect(await contract.minimumStakedAmount()).to.eq(value);
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(value);
     });
 
     it("should emit Staked event", async () => {
@@ -210,6 +210,23 @@ describe("Staking contract", function () {
           accounts[2].address,
           accounts[3].address,
         ]);
+    });
+
+    it("should update the minimum staked amount when a validator unstakes", async () => {
+      // Let account #1 become the lowest validator.
+      await Promise.all(
+          accounts
+              .slice(1, numInitialValidators)
+              .map((account) => stake(account, stakedAmount))
+      );
+
+      // minimum staked amount should be 1.5 ETH
+      await stake(accounts[0], ethers.utils.parseEther("0.5"));
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(ethers.utils.parseEther("1.5"));
+
+      // account #1 unstakes, account #5 should be the lowest validator
+      await contract.unstake();
+      expect(await contract.minimumStakedAmountByValidator()).to.eq(ethers.utils.parseEther("2"));
     });
   });
 });

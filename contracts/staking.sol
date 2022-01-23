@@ -15,7 +15,7 @@ contract Staking {
     mapping(address => uint256) _addressToStakedAmount;
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
-    uint256 _minimumStakedAmount;
+    uint256 _minimumStakedAmountByValidator;
 
     // Event
     event Staked(address indexed account, uint256 amount);
@@ -43,8 +43,8 @@ contract Staking {
         return _stakedAmount;
     }
 
-    function minimumStakedAmount() public view returns (uint256) {
-        return _minimumStakedAmount;
+    function minimumStakedAmountByValidator() public view returns (uint256) {
+        return _minimumStakedAmountByValidator;
     }
 
     function validators() public view returns (address[] memory) {
@@ -77,10 +77,9 @@ contract Staking {
             _addressToIsValidator[msg.sender] = true;
             _addressToValidatorIndex[msg.sender] = _validators.length;
             _validators.push(msg.sender);
-
-            _updateMinimumStakedAmount();
         }
 
+        _updateMinimumStakedAmount();
         emit Staked(msg.sender, msg.value);
     }
 
@@ -94,6 +93,7 @@ contract Staking {
 
         if (_addressToIsValidator[msg.sender]) {
             _deleteFromValidators(msg.sender);
+            _updateMinimumStakedAmount();
         }
 
         _addressToStakedAmount[msg.sender] = 0;
@@ -125,17 +125,17 @@ contract Staking {
     }
 
     function _updateMinimumStakedAmount() private {
-        // If this is the first time a validator stakes
-        if (_validators.length == 1) {
-            _minimumStakedAmount = _addressToStakedAmount[_validators[0]];
+        if (_validators.length == 0) {
             return;
         }
 
-        // Otherwise
-        for (uint32 i = 0; i < _validators.length; i++) {
-            if (_addressToStakedAmount[_validators[i]] < _minimumStakedAmount) {
-                _minimumStakedAmount = _addressToStakedAmount[_validators[i]];
+        uint256 min = _addressToStakedAmount[_validators[0]];
+
+        for (uint32 i = 1; i < _validators.length; i++) {
+            if (_addressToStakedAmount[_validators[i]] < min) {
+                min = _addressToStakedAmount[_validators[i]];
             }
         }
+        _minimumStakedAmountByValidator = min;
     }
 }
