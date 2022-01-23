@@ -8,6 +8,7 @@ contract Staking {
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
     uint32 public constant MinimumRequiredNumValidators = 4;
+    uint32 public constant MaximumNumValidators = 6;
 
     // Properties
     address[] public _validators;
@@ -48,6 +49,10 @@ contract Staking {
         return _minimumStakedAmountByValidator;
     }
 
+    function lowestValidator() public view returns (address) {
+        return _lowestValidator;
+    }
+
     function validators() public view returns (address[] memory) {
         return _validators;
     }
@@ -74,10 +79,17 @@ contract Staking {
             !_addressToIsValidator[msg.sender] &&
             _addressToStakedAmount[msg.sender] >= ValidatorThreshold
         ) {
-            // append to validator set
-            _addressToIsValidator[msg.sender] = true;
-            _addressToValidatorIndex[msg.sender] = _validators.length;
-            _validators.push(msg.sender);
+            if (_validators.length < MaximumNumValidators) {
+                _appendToValidatorSet(msg.sender);
+            } else {
+                require(
+                    _addressToStakedAmount[msg.sender] > _minimumStakedAmountByValidator,
+                    "Total amount the account staked is less than current minimum staked amount by a validator"
+                );
+
+                _deleteFromValidators(_lowestValidator);
+                _appendToValidatorSet(msg.sender);
+            }
         }
 
         _updateMinimumStakedAmount();
@@ -131,6 +143,7 @@ contract Staking {
         }
 
         uint256 min = _addressToStakedAmount[_validators[0]];
+        _lowestValidator = _validators[0];
 
         for (uint32 i = 1; i < _validators.length; i++) {
             if (_addressToStakedAmount[_validators[i]] < min) {
@@ -139,5 +152,11 @@ contract Staking {
             }
         }
         _minimumStakedAmountByValidator = min;
+    }
+
+    function _appendToValidatorSet(address newValidator) private {
+        _addressToIsValidator[newValidator] = true;
+        _addressToValidatorIndex[newValidator] = _validators.length;
+        _validators.push(newValidator);
     }
 }

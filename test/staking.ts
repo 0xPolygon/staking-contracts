@@ -27,6 +27,10 @@ describe("Staking contract", function () {
   describe("Stake", () => {
     const value = ethers.utils.parseEther("1");
 
+    const stake = async (account: SignerWithAddress, amount: BigNumber) => {
+      return contract.connect(account).stake({ value: amount });
+    };
+
     it("should increase stakedAmount if account send value to contract", async () => {
       await expect(() => contract.stake({ value })).to.changeEtherBalances(
         [accounts[0], contract],
@@ -90,6 +94,45 @@ describe("Staking contract", function () {
       await contract.stake({ value });
 
       expect(await contract.validators()).not.to.include(accounts[0].address);
+    });
+
+    it("should drop a validator and replace it with one who has more stake amount", async () => {
+      // Reach maximum validator number
+      await Promise.all(
+          accounts
+              .slice(0, 6)
+              .map((account) => stake(account, value))
+      );
+
+      expect(await contract.validators())
+          .to.have.length(6)
+          .and.to.deep.equal([
+            accounts[0].address,
+            accounts[1].address,
+            accounts[2].address,
+            accounts[3].address,
+            accounts[4].address,
+            accounts[5].address,
+          ]);
+
+      expect(await contract.lowestValidator()).to.eq(accounts[0].address);
+
+      // New account stakes more than minimum registered
+      await stake(accounts[6], ethers.utils.parseEther("2"));
+
+      expect(await contract.validators())
+          // [0, 1, 2, 3, 4, 5] => [5, 1, 2, 3, 4, 6]
+          .to.have.length(6)
+          .and.to.deep.equal([
+            accounts[5].address,
+            accounts[1].address,
+            accounts[2].address,
+            accounts[3].address,
+            accounts[4].address,
+            accounts[6].address,
+          ]);
+
+      expect(await contract.lowestValidator()).to.eq(accounts[5].address);
     });
   });
 
