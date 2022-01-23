@@ -78,12 +78,7 @@ contract Staking {
             _addressToValidatorIndex[msg.sender] = _validators.length;
             _validators.push(msg.sender);
 
-            // Updates the minimum staked amount by a validator
-            // It only happens when a new validator stakes a lower amount than everyone else
-            // or whenever the first validator stakes
-            if (_addressToStakedAmount[msg.sender] < _minimumStakedAmount || _minimumStakedAmount == 0) {
-                _minimumStakedAmount = _addressToStakedAmount[msg.sender];
-            }
+            _updateMinimumStakedAmount();
         }
 
         emit Staked(msg.sender, msg.value);
@@ -127,5 +122,20 @@ contract Staking {
         _addressToIsValidator[staker] = false;
         _addressToValidatorIndex[staker] = 0;
         _validators.pop();
+    }
+
+    function _updateMinimumStakedAmount() private {
+        // If this is the first time a validator stakes
+        if (_validators.length == 1) {
+            _minimumStakedAmount = _addressToStakedAmount[_validators[0]];
+            return;
+        }
+
+        // Otherwise
+        for (uint32 i = 0; i < _validators.length; i++) {
+            if (_addressToStakedAmount[_validators[i]] < _minimumStakedAmount) {
+                _minimumStakedAmount = _addressToStakedAmount[_validators[i]];
+            }
+        }
     }
 }
