@@ -11,7 +11,7 @@ describe("Staking contract", function () {
     accounts = await ethers.getSigners();
 
     const contractFactory = await ethers.getContractFactory("Staking");
-    contract = (await contractFactory.deploy()) as Staking;
+    contract = (await contractFactory.deploy(6)) as Staking;
     await contract.deployed();
     contract = contract.connect(accounts[0]);
   });

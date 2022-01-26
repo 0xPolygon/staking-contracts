@@ -8,7 +8,6 @@ contract Staking {
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
     uint32 public constant MinimumRequiredNumValidators = 4;
-    uint32 public constant MaximumNumValidators = 6;
 
     // Properties
     address[] public _validators;
@@ -18,6 +17,7 @@ contract Staking {
     uint256 _stakedAmount;
     uint256 _minimumStakedAmountByValidator;
     address _lowestValidator;
+    uint32 _maximumNumValidators;
 
     // Event
     event Staked(address indexed account, uint256 amount);
@@ -38,7 +38,9 @@ contract Staking {
         _;
     }
 
-    constructor() {}
+    constructor(uint32 maxNumValidators) {
+        _maximumNumValidators = maxNumValidators;
+    }
 
     // view function
     function stakedAmount() public view returns (uint256) {
@@ -79,7 +81,7 @@ contract Staking {
             !_addressToIsValidator[msg.sender] &&
             _addressToStakedAmount[msg.sender] >= ValidatorThreshold
         ) {
-            if (_validators.length >= MaximumNumValidators) {
+            if (_validators.length >= _maximumNumValidators) {
                 require(
                     _addressToStakedAmount[msg.sender] > _minimumStakedAmountByValidator,
                     "Total amount the account staked is less than current minimum staked amount by a validator"
