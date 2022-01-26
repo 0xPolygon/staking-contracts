@@ -79,17 +79,15 @@ contract Staking {
             !_addressToIsValidator[msg.sender] &&
             _addressToStakedAmount[msg.sender] >= ValidatorThreshold
         ) {
-            if (_validators.length < MaximumNumValidators) {
-                _appendToValidatorSet(msg.sender);
-            } else {
+            if (_validators.length >= MaximumNumValidators) {
                 require(
                     _addressToStakedAmount[msg.sender] > _minimumStakedAmountByValidator,
                     "Total amount the account staked is less than current minimum staked amount by a validator"
                 );
 
                 _deleteFromValidators(_lowestValidator);
-                _appendToValidatorSet(msg.sender);
             }
+            _appendToValidatorSet(msg.sender);
         }
 
         _updateMinimumStakedAmount();
