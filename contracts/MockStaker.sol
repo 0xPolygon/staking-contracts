@@ -1,6 +1,6 @@
 pragma solidity ^0.8.7;
 
-import "./staking.sol";
+import "./Staking.sol";
 
 // This is mock contract to access to StakingContract
 contract MockStaker {

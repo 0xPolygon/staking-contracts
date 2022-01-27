@@ -16,8 +16,22 @@ describe("Staking contract", function () {
     contract = contract.connect(accounts[0]);
   });
 
-  it("staked amount should be default on deployed", async () => {
-    expect(await contract.stakedAmount()).to.eq(0);
+  describe("default", () => {
+    it("staked amount should be zero", async () => {
+      expect(await contract.stakedAmount()).to.eq(0);
+    });
+
+    it("validators should be empty", async () => {
+      expect(await contract.validators()).to.be.empty;
+    });
+
+    it("isValidator should return false for non-validator", async () => {
+      expect(await contract.isValidator(accounts[0].address)).to.be.false;
+    });
+
+    it("accountStake should return zero for non-staker", async () => {
+      expect(await contract.accountStake(accounts[0].address)).to.equal(0);
+    });
   });
 
   it("minimum staked amount should be default on deployed", async () => {
@@ -36,6 +50,8 @@ describe("Staking contract", function () {
         [accounts[0], contract],
         [value.mul("-1"), value]
       );
+
+      expect(await contract.accountStake(accounts[0].address)).to.equal(value);
     });
 
     it("should increase minimumStakedAmountByValidator if account send value for the first time to contract", async () => {
@@ -83,17 +99,19 @@ describe("Staking contract", function () {
         .withArgs(accounts[0].address, value);
     });
 
-    it("should append to validator set", async () => {
+    it("should append to validator set if the account has staked enough amount", async () => {
       await contract.stake({ value });
 
       expect(await contract.validators()).to.include(accounts[0].address);
+      expect(await contract.isValidator(accounts[0].address)).to.be.true;
     });
 
-    it("shouldn't append new validator", async () => {
+    it("shouldn't append new validator if the account has not staked enough amount", async () => {
       const value = ethers.utils.parseEther("0.5");
       await contract.stake({ value });
 
       expect(await contract.validators()).not.to.include(accounts[0].address);
+      expect(await contract.isValidator(accounts[0].address)).to.be.false;
     });
 
     it("should drop a validator and replace it with one who has more stake amount", async () => {
@@ -152,6 +170,8 @@ describe("Staking contract", function () {
           value: value,
         })
       ).to.changeEtherBalances([account, contract], [value.mul("-1"), value]);
+
+      expect(await contract.accountStake(account.address)).to.equal(value);
     });
 
     it("should emit Staked event", async () => {
@@ -174,6 +194,7 @@ describe("Staking contract", function () {
       });
 
       expect(await contract.validators()).to.include(account.address);
+      expect(await contract.isValidator(account.address)).to.be.true;
     });
   });
 
@@ -208,6 +229,12 @@ describe("Staking contract", function () {
       await expect(contract.unstake()).to.be.revertedWith(
         "Number of validators can't be less than MinimumRequiredNumValidators"
       );
+
+      // check the account is still validator
+      expect(await contract.isValidator(accounts[0].address)).to.be.true;
+      expect(await contract.accountStake(accounts[0].address)).to.equal(
+        stakedAmount
+      );
     });
 
     it("should succeed and refund the staked balance", async () => {
@@ -215,6 +242,8 @@ describe("Staking contract", function () {
         [accounts[0], contract],
         [stakedAmount, stakedAmount.mul("-1")]
       );
+
+      expect(await contract.accountStake(accounts[0].address)).to.equal(0);
     });
 
     it("should succeed and emit Unstaked event", async () => {
@@ -228,6 +257,8 @@ describe("Staking contract", function () {
       expect(await contract.validators())
         .to.have.length(numInitialValidators - 1)
         .not.to.include(accounts[0].address);
+
+      expect(await contract.isValidator(accounts[0].address)).to.be.false;
     });
 
     it("should exchange between 2 addresses in validators when contract remove validator in the middle of array", async () => {

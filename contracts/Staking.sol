@@ -19,12 +19,12 @@ contract Staking {
     address _lowestValidator;
     uint32 _maximumNumValidators;
 
-    // Event
+    // Events
     event Staked(address indexed account, uint256 amount);
 
     event Unstaked(address indexed account, uint256 amount);
 
-    // modifiers
+    // Modifiers
     modifier onlyEOA() {
         require(!msg.sender.isContract(), "Only EOA can call function");
         _;
@@ -42,7 +42,7 @@ contract Staking {
         _maximumNumValidators = maxNumValidators;
     }
 
-    // view function
+    // View functions
     function stakedAmount() public view returns (uint256) {
         return _stakedAmount;
     }
@@ -59,7 +59,15 @@ contract Staking {
         return _validators;
     }
 
-    // public functions
+    function isValidator(address addr) public view returns (bool) {
+        return _addressToIsValidator[addr];
+    }
+
+    function accountStake(address addr) public view returns (uint256) {
+        return _addressToStakedAmount[addr];
+    }
+
+    // Public functions
     receive() external payable onlyEOA {
         _stake();
     }
@@ -72,7 +80,7 @@ contract Staking {
         _unstake();
     }
 
-    // private functions
+    // Private functions
     function _stake() private {
         _stakedAmount += msg.value;
         _addressToStakedAmount[msg.sender] += msg.value;
