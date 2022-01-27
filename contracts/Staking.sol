@@ -15,8 +15,6 @@ contract Staking {
     mapping(address => uint256) _addressToStakedAmount;
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
-    uint256 _minimumStakedAmountByValidator;
-    address _lowestValidator;
     uint32 _maximumNumValidators;
 
     // Events
@@ -47,14 +45,6 @@ contract Staking {
         return _stakedAmount;
     }
 
-    function minimumStakedAmountByValidator() public view returns (uint256) {
-        return _minimumStakedAmountByValidator;
-    }
-
-    function lowestValidator() public view returns (address) {
-        return _lowestValidator;
-    }
-
     function validators() public view returns (address[] memory) {
         return _validators;
     }
@@ -82,6 +72,10 @@ contract Staking {
 
     // Private functions
     function _stake() private {
+        require(
+            _validators.length < _maximumNumValidators,
+            "Validator set has reached full capacity"
+        );
         _stakedAmount += msg.value;
         _addressToStakedAmount[msg.sender] += msg.value;
 
@@ -89,18 +83,9 @@ contract Staking {
             !_addressToIsValidator[msg.sender] &&
             _addressToStakedAmount[msg.sender] >= ValidatorThreshold
         ) {
-            if (_validators.length >= _maximumNumValidators) {
-                require(
-                    _addressToStakedAmount[msg.sender] > _minimumStakedAmountByValidator,
-                    "Total amount the account staked is less than current minimum staked amount by a validator"
-                );
-
-                _deleteFromValidators(_lowestValidator);
-            }
             _appendToValidatorSet(msg.sender);
         }
 
-        _updateMinimumStakedAmount();
         emit Staked(msg.sender, msg.value);
     }
 
@@ -114,7 +99,6 @@ contract Staking {
 
         if (_addressToIsValidator[msg.sender]) {
             _deleteFromValidators(msg.sender);
-            _updateMinimumStakedAmount();
         }
 
         _addressToStakedAmount[msg.sender] = 0;
@@ -143,23 +127,6 @@ contract Staking {
         _addressToIsValidator[staker] = false;
         _addressToValidatorIndex[staker] = 0;
         _validators.pop();
-    }
-
-    function _updateMinimumStakedAmount() private {
-        if (_validators.length == 0) {
-            return;
-        }
-
-        uint256 min = _addressToStakedAmount[_validators[0]];
-        _lowestValidator = _validators[0];
-
-        for (uint32 i = 1; i < _validators.length; i++) {
-            if (_addressToStakedAmount[_validators[i]] < min) {
-                min = _addressToStakedAmount[_validators[i]];
-                _lowestValidator = _validators[i];
-            }
-        }
-        _minimumStakedAmountByValidator = min;
     }
 
     function _appendToValidatorSet(address newValidator) private {
