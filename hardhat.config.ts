@@ -14,9 +14,6 @@ const config: HardhatUserConfig = {
   networks: {
     polygonedge: {
       url: process.env.JSONRPC_URL ?? "http://localhost:10002",
-      accounts: [
-        ...privateKeys,
-      ],
     },
   },
   gasReporter: {

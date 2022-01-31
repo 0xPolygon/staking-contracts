@@ -1,0 +1,25 @@
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install required dependencies
+        run: npm i
+
+      - name: Builds the Smart Contract
+        run: npm run build
+
+      - name: Run the tests
+        run: npm run test
