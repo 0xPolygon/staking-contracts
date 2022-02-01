@@ -15,8 +15,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install required dependencies
-        run: npm i
+      - name: Install solhint
+        run: npm install -g solhint
 
       - name: Run linter
         run: solhint 'contracts/Staking.sol'
