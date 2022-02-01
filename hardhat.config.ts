@@ -7,13 +7,16 @@ import "hardhat-gas-reporter"
 
 require("dotenv").config();
 
-const privateKeys = (process.env.PRIVATE_KEYS ?? "").split(",")
+const privateKeys = (process.env.PRIVATE_KEYS ?? "0000000000000000000000000000000000000000000000000000000000000000").split(",")
 
 const config: HardhatUserConfig = {
   solidity: "0.8.7",
   networks: {
     polygonedge: {
       url: process.env.JSONRPC_URL ?? "http://localhost:10002",
+      accounts: [
+          ...privateKeys,
+      ],
     },
   },
   gasReporter: {
