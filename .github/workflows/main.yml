@@ -6,6 +6,21 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install required dependencies
+        run: npm i
+
+      - name: Run linter
+        run: solhint 'contracts/Staking.sol'
+
   test:
     runs-on: ubuntu-latest
     steps:
