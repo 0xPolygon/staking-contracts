@@ -7,7 +7,6 @@ contract Staking {
 
     // Parameters
     uint128 public constant ValidatorThreshold = 1 ether;
-    uint32 public constant MinimumRequiredNumValidators = 4;
 
     // Properties
     address[] public _validators;
@@ -16,6 +15,7 @@ contract Staking {
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
     uint32 _maximumNumValidators;
+    uint32 _minimumNumValidators;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -36,8 +36,9 @@ contract Staking {
         _;
     }
 
-    constructor(uint32 maxNumValidators) {
+    constructor(uint32 minNumValidators, uint32 maxNumValidators) {
         _maximumNumValidators = maxNumValidators;
+        _minimumNumValidators = minNumValidators;
     }
 
     // View functions
@@ -91,7 +92,7 @@ contract Staking {
 
     function _unstake() private {
         require(
-            _validators.length > MinimumRequiredNumValidators,
+            _validators.length > _minimumNumValidators,
             "Number of validators can't be less than MinimumRequiredNumValidators"
         );
 
