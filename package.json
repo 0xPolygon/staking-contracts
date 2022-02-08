@@ -13,7 +13,8 @@
     "info": "hardhat run scripts/info.ts --network polygonedge",
     "test": "npx hardhat test",
     "clean": "npx hardhat clean",
-    "compile": "npx hardhat compile"
+    "compile": "npx hardhat compile",
+    "lint": "solhint 'contracts/Staking.sol'"
   },
   "dependencies": {
     "dotenv": "^10.0.0",
