@@ -19,7 +19,7 @@ jobs:
         run: npm install -g solhint
 
       - name: Run linter
-        run: solhint 'contracts/Staking.sol'
+        run: npm run lint
 
   test:
     needs: lint
