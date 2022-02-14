@@ -58,6 +58,14 @@ contract Staking {
         return _addressToStakedAmount[addr];
     }
 
+    function minimumNumValidators() public view returns (uint32) {
+        return _minimumNumValidators;
+    }
+
+    function maximumNumValidators() public view returns (uint32) {
+        return _maximumNumValidators;
+    }
+
     // Public functions
     receive() external payable onlyEOA {
         _stake();

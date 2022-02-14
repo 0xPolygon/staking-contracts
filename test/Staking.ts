@@ -32,6 +32,14 @@ describe("Staking contract", function () {
     it("accountStake should return zero for non-staker", async () => {
       expect(await contract.accountStake(accounts[0].address)).to.equal(0);
     });
+
+    it("minimumNumValidators should be 4", async () => {
+      expect(await contract.minimumNumValidators()).to.equal(4);
+    });
+
+    it("maximumNumValidators should be 6", async () => {
+      expect(await contract.maximumNumValidators()).to.equal(6);
+    });
   });
 
   describe("Stake", () => {
