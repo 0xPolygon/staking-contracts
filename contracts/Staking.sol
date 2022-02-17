@@ -14,8 +14,8 @@ contract Staking {
     mapping(address => uint256) _addressToStakedAmount;
     mapping(address => uint256) _addressToValidatorIndex;
     uint256 _stakedAmount;
-    uint32 _maximumNumValidators;
     uint32 _minimumNumValidators;
+    uint32 _maximumNumValidators;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -37,8 +37,8 @@ contract Staking {
     }
 
     constructor(uint32 minNumValidators, uint32 maxNumValidators) {
-        _maximumNumValidators = maxNumValidators;
         _minimumNumValidators = minNumValidators;
+        _maximumNumValidators = maxNumValidators;
     }
 
     // View functions
