@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -6,15 +6,15 @@ contract Staking {
     using Address for address;
 
     // Parameters
-    uint128 public constant ValidatorThreshold = 1 ether;
-    uint32 public constant MinimumRequiredNumValidators = 4;
+    uint128 public constant VALIDATOR_THRESHOLD = 1 ether;
+    uint32 public constant MINIMUM_REQUIRED_NUM_VALIDATORS = 4;
 
     // Properties
     address[] public _validators;
-    mapping(address => bool) _addressToIsValidator;
-    mapping(address => uint256) _addressToStakedAmount;
-    mapping(address => uint256) _addressToValidatorIndex;
-    uint256 _stakedAmount;
+    mapping(address => bool) public _addressToIsValidator;
+    mapping(address => uint256) public _addressToStakedAmount;
+    mapping(address => uint256) public _addressToValidatorIndex;
+    uint256 public _stakedAmount;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -34,8 +34,6 @@ contract Staking {
         );
         _;
     }
-
-    constructor() {}
 
     // View functions
     function stakedAmount() public view returns (uint256) {
@@ -74,7 +72,7 @@ contract Staking {
 
         if (
             !_addressToIsValidator[msg.sender] &&
-            _addressToStakedAmount[msg.sender] >= ValidatorThreshold
+            _addressToStakedAmount[msg.sender] >= VALIDATOR_THRESHOLD
         ) {
             // append to validator set
             _addressToIsValidator[msg.sender] = true;
@@ -87,8 +85,8 @@ contract Staking {
 
     function _unstake() private {
         require(
-            _validators.length > MinimumRequiredNumValidators,
-            "Number of validators can't be less than MinimumRequiredNumValidators"
+            _validators.length > MINIMUM_REQUIRED_NUM_VALIDATORS,
+            "Validators can't be less than MINIMUM_REQUIRED_NUM_VALIDATORS"
         );
 
         uint256 amount = _addressToStakedAmount[msg.sender];
