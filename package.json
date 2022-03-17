@@ -13,7 +13,8 @@
     "info": "hardhat run scripts/info.ts --network polygonedge",
     "test": "npx hardhat test",
     "clean": "npx hardhat clean",
-    "compile": "npx hardhat compile"
+    "compile": "npx hardhat compile",
+    "lint": "solhint 'contracts/*.sol'"
   },
   "dependencies": {
     "dotenv": "^10.0.0",
@@ -33,6 +34,7 @@
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
     "hardhat-gas-reporter": "^1.0.4",
+    "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.16",
     "ts-generator": "^0.1.1",
     "ts-node": "^10.2.1",
