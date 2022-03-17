@@ -133,15 +133,15 @@ describe("Staking contract", function () {
       ).to.be.revertedWith("Only staker can call function");
     });
 
-    it("should failed if current number of validators equals to MinimumRequiredNumValidators", async () => {
+    it("should failed if current number of validators equals to MINIMUM_REQUIRED_NUM_VALIDATORS", async () => {
       // remove 1 account first
       await contract.connect(accounts[1]).unstake();
-      // current number of validators should be same to 4 (MinimumRequiredNumValidators)
+      // current number of validators should be same to 4 (MINIMUM_REQUIRED_NUM_VALIDATORS)
       await expect(await contract.validators()).to.have.length(4);
 
       // cannot remove validator anymore
       await expect(contract.unstake()).to.be.revertedWith(
-        "Number of validators can't be less than MinimumRequiredNumValidators"
+        "Validators can't be less than MINIMUM_REQUIRED_NUM_VALIDATORS"
       );
 
       // check the account is still validator
