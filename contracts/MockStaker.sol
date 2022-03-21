@@ -4,12 +4,13 @@ import "./Staking.sol";
 
 // This is mock contract to access to StakingContract
 contract MockStaker {
-    Staking _staking;
+    Staking public _staking;
 
     constructor(address payable stakingContractAddr) {
         _staking = Staking(stakingContractAddr);
     }
 
+    // solhint-disable-next-line
     receive() external payable {}
 
     function transfer(uint256 amount) public {

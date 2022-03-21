@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -6,16 +6,16 @@ contract Staking {
     using Address for address;
 
     // Parameters
-    uint128 public constant ValidatorThreshold = 1 ether;
+    uint128 public constant VALIDATOR_THRESHOLD = 1 ether;
 
     // Properties
     address[] public _validators;
-    mapping(address => bool) _addressToIsValidator;
-    mapping(address => uint256) _addressToStakedAmount;
-    mapping(address => uint256) _addressToValidatorIndex;
-    uint256 _stakedAmount;
-    uint32 _minimumNumValidators;
-    uint32 _maximumNumValidators;
+    mapping(address => bool) public _addressToIsValidator;
+    mapping(address => uint256) public _addressToStakedAmount;
+    mapping(address => uint256) public _addressToValidatorIndex;
+    uint256 public _stakedAmount;
+    uint32 public _minimumNumValidators;
+    uint32 public _maximumNumValidators;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -39,7 +39,7 @@ contract Staking {
     constructor(uint32 minNumValidators, uint32 maxNumValidators) {
          require(
             minNumValidators <= maxNumValidators,
-            "minimum number of validators can not be greater than maximum number of validators"
+            "Validators can not be greater than maximum number of validators"
         );
         _minimumNumValidators = minNumValidators;
         _maximumNumValidators = maxNumValidators;
@@ -94,7 +94,7 @@ contract Staking {
 
         if (
             !_addressToIsValidator[msg.sender] &&
-            _addressToStakedAmount[msg.sender] >= ValidatorThreshold
+            _addressToStakedAmount[msg.sender] >= VALIDATOR_THRESHOLD
         ) {
             _appendToValidatorSet(msg.sender);
         }
@@ -105,7 +105,7 @@ contract Staking {
     function _unstake() private {
         require(
             _validators.length > _minimumNumValidators,
-            "Number of validators can't be less than MinimumRequiredNumValidators"
+            "Validators can't be less than MinimumRequiredNumValidators"
         );
 
         uint256 amount = _addressToStakedAmount[msg.sender];

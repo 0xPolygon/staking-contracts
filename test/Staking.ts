@@ -164,7 +164,7 @@ describe("Staking contract", function () {
 
       // cannot remove validator anymore
       await expect(contract.unstake()).to.be.revertedWith(
-        "Number of validators can't be less than MinimumRequiredNumValidators"
+        "Validators can't be less than MinimumRequiredNumValidators"
       );
 
       // check the account is still validator
