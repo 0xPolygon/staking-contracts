@@ -39,7 +39,7 @@ contract Staking {
     constructor(uint32 minNumValidators, uint32 maxNumValidators) {
          require(
             minNumValidators <= maxNumValidators,
-            "Validators can not be greater than maximum number of validators"
+            "Min validators num can not be greater than max num of validators"
         );
         _minimumNumValidators = minNumValidators;
         _maximumNumValidators = maxNumValidators;

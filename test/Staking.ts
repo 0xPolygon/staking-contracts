@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { expect } from "chai";
 import { Staking } from "../types/Staking";
 
+
 describe("Staking contract", function () {
   let accounts: SignerWithAddress[];
   let contract: Staking;
