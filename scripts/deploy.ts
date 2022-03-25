@@ -1,18 +1,22 @@
 import {ethers} from "hardhat";
 
-async function main() {
-  const MinValidatorCount = 1;
-  //Max uint32
-	const MaxValidatorCount = 4294967295;
+const MIN_VALIDATOR_COUNT = process.env.MIN_VALIDATOR_COUNT ?? 1;
+const MAX_VALIDATOR_COUNT = process.env.MAX_VALIDATOR_COUNT ?? 4294967295;
 
+async function main() {
   const [deployer] = await ethers.getSigners();
+
+  if(MIN_VALIDATOR_COUNT >  MAX_VALIDATOR_COUNT){
+      console.log("MIN_VALIDATOR_COUNT can not be greater than MAX_VALIDATOR_COUNT")
+      return
+  }
 
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   const StakingContractFactory = await ethers.getContractFactory("Staking");
 
-  const stakingContract = await StakingContractFactory.deploy(MinValidatorCount, MaxValidatorCount);
+  const stakingContract = await StakingContractFactory.deploy(MIN_VALIDATOR_COUNT, MAX_VALIDATOR_COUNT);
 
   console.log("Contract address:", stakingContract.address);
 }

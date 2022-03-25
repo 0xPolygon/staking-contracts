@@ -105,7 +105,7 @@ contract Staking {
     function _unstake() private {
         require(
             _validators.length > _minimumNumValidators,
-            "Validators can't be less than MinimumRequiredNumValidators"
+            "Validators can't be less than the minimum required validator num"
         );
 
         uint256 amount = _addressToStakedAmount[msg.sender];
