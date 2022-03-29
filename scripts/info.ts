@@ -17,8 +17,8 @@ async function main() {
   ])
 
   console.log(`Total staked amount: ${stakedAmount.toString()}`)
-  console.log('Minimum number of validators', minimumNumValidators);
-  console.log('Maximum number of validators', maximumNumValidators);
+  console.log('Minimum number of validators', minimumNumValidators.toNumber());
+  console.log('Maximum number of validators', maximumNumValidators.toNumber());
   console.log('Current validators list', validators);
 
 }
