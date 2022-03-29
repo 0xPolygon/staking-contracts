@@ -14,8 +14,8 @@ contract Staking {
     mapping(address => uint256) public _addressToStakedAmount;
     mapping(address => uint256) public _addressToValidatorIndex;
     uint256 public _stakedAmount;
-    uint32 public _minimumNumValidators;
-    uint32 public _maximumNumValidators;
+    uint256 public _minimumNumValidators;
+    uint256 public _maximumNumValidators;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -36,7 +36,7 @@ contract Staking {
         _;
     }
 
-    constructor(uint32 minNumValidators, uint32 maxNumValidators) {
+    constructor(uint256 minNumValidators, uint256 maxNumValidators) {
          require(
             minNumValidators <= maxNumValidators,
             "Min validators num can not be greater than max num of validators"
@@ -62,11 +62,11 @@ contract Staking {
         return _addressToStakedAmount[addr];
     }
 
-    function minimumNumValidators() public view returns (uint32) {
+    function minimumNumValidators() public view returns (uint256) {
         return _minimumNumValidators;
     }
 
-    function maximumNumValidators() public view returns (uint32) {
+    function maximumNumValidators() public view returns (uint256) {
         return _maximumNumValidators;
     }
 
