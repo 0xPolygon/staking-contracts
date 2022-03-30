@@ -9,13 +9,18 @@ async function main() {
   const StakingContractFactory = await ethers.getContractFactory("Staking");
   const stakingContract = await StakingContractFactory.attach(STAKING_CONTRACT_ADDRESS) as Staking;
 
-  const [stakedAmount, validators] = await Promise.all([
+  const [stakedAmount, validators, minimumNumValidators, maximumNumValidators] = await Promise.all([
     stakingContract.stakedAmount(),
     stakingContract.validators(),
+    stakingContract.minimumNumValidators(),
+    stakingContract.maximumNumValidators(),
   ])
 
   console.log(`Total staked amount: ${stakedAmount.toString()}`)
-  console.log('Current Validators', validators);
+  console.log('Minimum number of validators', minimumNumValidators.toNumber());
+  console.log('Maximum number of validators', maximumNumValidators.toNumber());
+  console.log('Current validators list', validators);
+
 }
 
 main()

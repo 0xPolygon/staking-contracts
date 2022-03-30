@@ -7,7 +7,6 @@ contract Staking {
 
     // Parameters
     uint128 public constant VALIDATOR_THRESHOLD = 1 ether;
-    uint32 public constant MINIMUM_REQUIRED_NUM_VALIDATORS = 4;
 
     // Properties
     address[] public _validators;
@@ -15,6 +14,8 @@ contract Staking {
     mapping(address => uint256) public _addressToStakedAmount;
     mapping(address => uint256) public _addressToValidatorIndex;
     uint256 public _stakedAmount;
+    uint256 public _minimumNumValidators;
+    uint256 public _maximumNumValidators;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -35,6 +36,15 @@ contract Staking {
         _;
     }
 
+    constructor(uint256 minNumValidators, uint256 maxNumValidators) {
+         require(
+            minNumValidators <= maxNumValidators,
+            "Min validators num can not be greater than max num of validators"
+        );
+        _minimumNumValidators = minNumValidators;
+        _maximumNumValidators = maxNumValidators;
+    }
+
     // View functions
     function stakedAmount() public view returns (uint256) {
         return _stakedAmount;
@@ -52,6 +62,14 @@ contract Staking {
         return _addressToStakedAmount[addr];
     }
 
+    function minimumNumValidators() public view returns (uint256) {
+        return _minimumNumValidators;
+    }
+
+    function maximumNumValidators() public view returns (uint256) {
+        return _maximumNumValidators;
+    }
+
     // Public functions
     receive() external payable onlyEOA {
         _stake();
@@ -67,6 +85,10 @@ contract Staking {
 
     // Private functions
     function _stake() private {
+        require(
+            _validators.length < _maximumNumValidators,
+            "Validator set has reached full capacity"
+        );
         _stakedAmount += msg.value;
         _addressToStakedAmount[msg.sender] += msg.value;
 
@@ -74,10 +96,7 @@ contract Staking {
             !_addressToIsValidator[msg.sender] &&
             _addressToStakedAmount[msg.sender] >= VALIDATOR_THRESHOLD
         ) {
-            // append to validator set
-            _addressToIsValidator[msg.sender] = true;
-            _addressToValidatorIndex[msg.sender] = _validators.length;
-            _validators.push(msg.sender);
+            _appendToValidatorSet(msg.sender);
         }
 
         emit Staked(msg.sender, msg.value);
@@ -85,8 +104,8 @@ contract Staking {
 
     function _unstake() private {
         require(
-            _validators.length > MINIMUM_REQUIRED_NUM_VALIDATORS,
-            "Validators can't be less than MINIMUM_REQUIRED_NUM_VALIDATORS"
+            _validators.length > _minimumNumValidators,
+            "Validators can't be less than the minimum required validator num"
         );
 
         uint256 amount = _addressToStakedAmount[msg.sender];
@@ -121,5 +140,11 @@ contract Staking {
         _addressToIsValidator[staker] = false;
         _addressToValidatorIndex[staker] = 0;
         _validators.pop();
+    }
+
+    function _appendToValidatorSet(address newValidator) private {
+        _addressToIsValidator[newValidator] = true;
+        _addressToValidatorIndex[newValidator] = _validators.length;
+        _validators.push(newValidator);
     }
 }

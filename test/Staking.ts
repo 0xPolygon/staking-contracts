@@ -4,14 +4,26 @@ import { BigNumber } from "ethers";
 import { expect } from "chai";
 import { Staking } from "../types/Staking";
 
-describe("Staking contract", function () {
+
+describe("Staking contract deployment", async () => {
+  it("Min validators should not be greater than max validators number", async function () {
+    const contractFactory = await ethers.getContractFactory("Staking");
+    await expect(contractFactory.deploy(7, 6)).to.be.revertedWith(
+        "Min validators num can not be greater than max num of validators"
+    );
+  })
+})
+
+describe("Staking and Unstaking", function () {
   let accounts: SignerWithAddress[];
   let contract: Staking;
   beforeEach(async () => {
     accounts = await ethers.getSigners();
+    const MinValidatorCount = 4;
+    const MaxValidatorCount = 6;
 
     const contractFactory = await ethers.getContractFactory("Staking");
-    contract = (await contractFactory.deploy()) as Staking;
+    contract = (await contractFactory.deploy(MinValidatorCount, MaxValidatorCount)) as Staking;
     await contract.deployed();
     contract = contract.connect(accounts[0]);
   });
@@ -32,10 +44,22 @@ describe("Staking contract", function () {
     it("accountStake should return zero for non-staker", async () => {
       expect(await contract.accountStake(accounts[0].address)).to.equal(0);
     });
+
+    it("minimumNumValidators should be 4", async () => {
+      expect(await contract.minimumNumValidators()).to.equal(4);
+    });
+
+    it("maximumNumValidators should be 6", async () => {
+      expect(await contract.maximumNumValidators()).to.equal(6);
+    });
   });
 
   describe("Stake", () => {
     const value = ethers.utils.parseEther("1");
+
+    const stake = async (account: SignerWithAddress, amount: BigNumber) => {
+      return contract.connect(account).stake({ value: amount });
+    };
 
     it("should increase stakedAmount if account send value to contract", async () => {
       await expect(() => contract.stake({ value })).to.changeEtherBalances(
@@ -65,6 +89,17 @@ describe("Staking contract", function () {
 
       expect(await contract.validators()).not.to.include(accounts[0].address);
       expect(await contract.isValidator(accounts[0].address)).to.be.false;
+    });
+
+    it("should reach full validator set capacity", async () => {
+      await Promise.all(accounts
+          .slice(0, 6)
+          .map((account) => {
+            stake(account, value);
+          })
+      );
+
+      await expect(stake(accounts[6], value)).to.be.revertedWith("Validator set has reached full capacity");
     });
   });
 
@@ -133,15 +168,15 @@ describe("Staking contract", function () {
       ).to.be.revertedWith("Only staker can call function");
     });
 
-    it("should failed if current number of validators equals to MINIMUM_REQUIRED_NUM_VALIDATORS", async () => {
+    it("should fail to unstake if current validator number equals to the min validator number", async () => {
       // remove 1 account first
       await contract.connect(accounts[1]).unstake();
-      // current number of validators should be same to 4 (MINIMUM_REQUIRED_NUM_VALIDATORS)
+      // current number of validators should be same to 4 (MinimumRequiredNumValidators)
       await expect(await contract.validators()).to.have.length(4);
 
       // cannot remove validator anymore
       await expect(contract.unstake()).to.be.revertedWith(
-        "Validators can't be less than MINIMUM_REQUIRED_NUM_VALIDATORS"
+        "Validators can't be less than the minimum required validator num"
       );
 
       // check the account is still validator
@@ -198,6 +233,23 @@ describe("Staking contract", function () {
           accounts[2].address,
           accounts[3].address,
         ]);
+    });
+
+    it("should be able to accept a new validator after the last one has unstaked", async () => {
+      // Reach full slot capacity
+      const value = ethers.utils.parseEther("1");
+      await Promise.all(accounts
+          .slice(0, 6)
+          .map((account) => {
+            stake(account, value);
+          })
+      );
+
+      // Account #0 unstakes
+      await contract.connect(accounts[0]).unstake();
+
+      // Account #6 should be able to become a validator
+      await expect(stake(accounts[6], value)).not.to.be.revertedWith("Validator set has reached full capacity");
     });
   });
 });
