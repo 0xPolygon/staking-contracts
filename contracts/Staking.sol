@@ -89,11 +89,6 @@ contract Staking {
         _addressToStakedAmount[msg.sender] += msg.value;
 
         if (_canBecomeValidator(msg.sender)) {
-            require(
-                _validators.length < _maximumNumValidators,
-                "Validator set has reached full capacity"
-            );
-
             _appendToValidatorSet(msg.sender);
         }
 
@@ -142,6 +137,11 @@ contract Staking {
     }
 
     function _appendToValidatorSet(address newValidator) private {
+        require(
+            _validators.length < _maximumNumValidators,
+            "Validator set has reached full capacity"
+        );
+
         _addressToIsValidator[newValidator] = true;
         _addressToValidatorIndex[newValidator] = _validators.length;
         _validators.push(newValidator);
@@ -153,7 +153,7 @@ contract Staking {
 
     function _canBecomeValidator(address account) private view returns (bool) {
         return
-            !_addressToIsValidator[account] &&
+            !_isValidator(account) &&
             _addressToStakedAmount[account] >= VALIDATOR_THRESHOLD;
     }
 }
