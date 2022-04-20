@@ -37,7 +37,7 @@ contract Staking {
     }
 
     constructor(uint256 minNumValidators, uint256 maxNumValidators) {
-         require(
+        require(
             minNumValidators <= maxNumValidators,
             "Min validators num can not be greater than max num of validators"
         );
@@ -85,17 +85,10 @@ contract Staking {
 
     // Private functions
     function _stake() private {
-        require(
-            _validators.length < _maximumNumValidators,
-            "Validator set has reached full capacity"
-        );
         _stakedAmount += msg.value;
         _addressToStakedAmount[msg.sender] += msg.value;
 
-        if (
-            !_addressToIsValidator[msg.sender] &&
-            _addressToStakedAmount[msg.sender] >= VALIDATOR_THRESHOLD
-        ) {
+        if (_canBecomeValidator(msg.sender)) {
             _appendToValidatorSet(msg.sender);
         }
 
@@ -103,24 +96,25 @@ contract Staking {
     }
 
     function _unstake() private {
-        require(
-            _validators.length > _minimumNumValidators,
-            "Validators can't be less than the minimum required validator num"
-        );
-
         uint256 amount = _addressToStakedAmount[msg.sender];
-
-        if (_addressToIsValidator[msg.sender]) {
-            _deleteFromValidators(msg.sender);
-        }
 
         _addressToStakedAmount[msg.sender] = 0;
         _stakedAmount -= amount;
+
+        if (_isValidator(msg.sender)) {
+            _deleteFromValidators(msg.sender);
+        }
+
         payable(msg.sender).transfer(amount);
         emit Unstaked(msg.sender, amount);
     }
 
     function _deleteFromValidators(address staker) private {
+        require(
+            _validators.length > _minimumNumValidators,
+            "Validators can't be less than the minimum required validator num"
+        );
+
         require(
             _addressToValidatorIndex[staker] < _validators.length,
             "index out of range"
@@ -143,8 +137,23 @@ contract Staking {
     }
 
     function _appendToValidatorSet(address newValidator) private {
+        require(
+            _validators.length < _maximumNumValidators,
+            "Validator set has reached full capacity"
+        );
+
         _addressToIsValidator[newValidator] = true;
         _addressToValidatorIndex[newValidator] = _validators.length;
         _validators.push(newValidator);
+    }
+
+    function _isValidator(address account) private view returns (bool) {
+        return _addressToIsValidator[account];
+    }
+
+    function _canBecomeValidator(address account) private view returns (bool) {
+        return
+            !_isValidator(account) &&
+            _addressToStakedAmount[account] >= VALIDATOR_THRESHOLD;
     }
 }
