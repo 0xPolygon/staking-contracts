@@ -17,6 +17,7 @@
     "lint": "solhint 'contracts/**/*.sol'"
   },
   "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^4.6.0",
     "dotenv": "^10.0.0",
     "ethers": "^5.4.5",
     "hardhat": "^2.6.1",
@@ -33,6 +34,8 @@
     "@types/node": "^16.7.1",
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
+    "hardhat-deploy": "^0.11.10",
+    "hardhat-deploy-ethers": "^0.3.0-beta.13",
     "hardhat-gas-reporter": "^1.0.4",
     "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.16",

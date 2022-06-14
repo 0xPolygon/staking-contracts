@@ -5,6 +5,7 @@ import "@typechain/hardhat"
 import "@nomiclabs/hardhat-ethers"
 import "hardhat-gas-reporter"
 
+
 require("dotenv").config();
 
 const privateKeys = (process.env.PRIVATE_KEYS ?? "0000000000000000000000000000000000000000000000000000000000000000").split(",")
@@ -12,6 +13,14 @@ const privateKeys = (process.env.PRIVATE_KEYS ?? "000000000000000000000000000000
 const config: HardhatUserConfig = {
   solidity: "0.8.7",
   networks: {
+    toronto: {
+      url: "https://rpc.toronto.sx.technology",
+      accounts: [...privateKeys],
+    },
+    mainnet: {
+      url: "https://rpc.sx.technology",
+      accounts: [...privateKeys],
+    },
     polygonedge: {
       url: process.env.JSONRPC_URL ?? "http://localhost:10002",
       accounts: [
