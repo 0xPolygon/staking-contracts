@@ -1,9 +1,12 @@
 import {HardhatUserConfig} from "hardhat/types";
-import "@nomiclabs/hardhat-waffle"
+import "@nomiclabs/hardhat-waffle";
 import "tsconfig-paths/register";
-import "@typechain/hardhat"
-import "@nomiclabs/hardhat-ethers"
-import "hardhat-gas-reporter"
+import "@typechain/hardhat";
+import "@openzeppelin/hardhat-upgrades";
+import "@nomiclabs/hardhat-ethers";
+import "hardhat-gas-reporter";
+
+import "./tasks/sx-pos";
 
 
 require("dotenv").config();
