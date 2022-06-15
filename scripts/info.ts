@@ -6,7 +6,7 @@ const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS ?? '';
 async function main() {
   console.log("Check current contract information");
 
-  const StakingContractFactory = await ethers.getContractFactory("Staking");
+  const StakingContractFactory = await ethers.getContractFactory("SXPoS");
   const stakingContract = await StakingContractFactory.attach(STAKING_CONTRACT_ADDRESS) as Staking;
 
   const [stakedAmount, validators, minimumNumValidators, maximumNumValidators] = await Promise.all([

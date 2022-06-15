@@ -3,15 +3,14 @@ const BigNumber = require("ethers").BigNumber;
 
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
-
-
+require("dotenv").config();
 
 const MIN_VALIDATOR_COUNT = process.env.MIN_VALIDATOR_COUNT ?? 1;
 const MAX_VALIDATOR_COUNT = process.env.MAX_VALIDATOR_COUNT ?? Number.MAX_SAFE_INTEGER - 1;
 
 const VALIDATOR_REWARD = "100000000000000000";
-const STAKING_PROXY_ADDRESS_HAMILTON = "0xF7756997a65b807aDD0231F2e50fe0C272499cb1"
-const STAKING_PROXY_ADDRESS_TORONTO = "0xaD556C7D3A458B5c1cfD5575a0B6AE6e3A2A658D";
+const STAKING_PROXY_ADDRESS_HAMILTON = ""
+const STAKING_PROXY_ADDRESS_TORONTO = "";
 const STAKING_PROXY_ADDRESS_MAINNET = "";
 
 function getProxyAddress() {
