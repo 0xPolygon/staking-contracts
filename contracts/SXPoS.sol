@@ -12,7 +12,7 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
     using AddressUpgradeable for address;
 
     // Parameters
-    uint128 public constant VALIDATOR_THRESHOLD = 1 ether;
+    uint128 public _validatorThreshold = 1 ether;
 
     // Properties
     address[] public _validators;
@@ -48,13 +48,14 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
     }
 
     function initialize(uint256 blockReward,uint256 minNumValidators, uint256 maxNumValidators) initializer public {
-      require(
+        _blockReward = blockReward;
+        require(
             minNumValidators <= maxNumValidators,
             "Min validators num can not be greater than max num of validators"
         );
         _minimumNumValidators = minNumValidators;
         _maximumNumValidators = maxNumValidators;
-        _blockReward = blockReward;
+        
         __Ownable_init();
         __UUPSUpgradeable_init();
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -63,6 +64,21 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    function setValidatorThreshold(uint128 validatorThreshold) external onlyAdmin {
+      _validatorThreshold = validatorThreshold;
+    }
+
+    function setValidatorCounts(uint256 minNumValidators, uint256 maxNumValidators) external onlyAdmin {
+        require(
+            minNumValidators <= maxNumValidators,
+            "Min validators num can not be greater than max num of validators"
+        );
+        
+        //TODO: will need to drop existing validators that surpass the max validator count
+
+        _minimumNumValidators = minNumValidators;
+        _maximumNumValidators = maxNumValidators;
+    }
 
     function setBlockReward(uint256 blockReward) external virtual onlyAdmin {
         _blockReward = blockReward;
@@ -70,10 +86,6 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
 
     function getBlockReward() external view returns(uint256) {
       return _blockReward;
-    }
-
-    function getVersion() pure public virtual returns (string memory) {
-      return "V1";
     }
 
     function stakedAmount() public view returns (uint256) {
@@ -98,6 +110,10 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
 
     function maximumNumValidators() public view returns (uint256) {
         return _maximumNumValidators;
+    }
+
+    function getVersion() pure public virtual returns (string memory) {
+      return "V1";
     }
 
     // Public functions
@@ -184,7 +200,7 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
     function _canBecomeValidator(address account) private view returns (bool) {
         return
             !_isValidator(account) &&
-            _addressToStakedAmount[account] >= VALIDATOR_THRESHOLD;
+            _addressToStakedAmount[account] >= _validatorThreshold;
     }
 
 }

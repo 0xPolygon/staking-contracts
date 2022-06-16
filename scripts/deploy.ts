@@ -1,5 +1,7 @@
-import {ethers} from "hardhat";
+import {ethers, upgrades} from "hardhat";
+import {BigNumber} from "ethers";
 
+const VALIDATOR_REWARD = process.env.VALIDATOR_REWARD ?? "100000000000000000"; // 0.1 ether
 const MIN_VALIDATOR_COUNT = process.env.MIN_VALIDATOR_COUNT ?? 1;
 const MAX_VALIDATOR_COUNT = process.env.MAX_VALIDATOR_COUNT ?? Number.MAX_SAFE_INTEGER - 1;
 
@@ -14,11 +16,13 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const StakingContractFactory = await ethers.getContractFactory("Staking");
+  const StakingContractFactory = await ethers.getContractFactory("SXPoS");
+  const staking = await upgrades.deployProxy(StakingContractFactory, [BigNumber.from(VALIDATOR_REWARD), MIN_VALIDATOR_COUNT, MAX_VALIDATOR_COUNT], {
+    kind: "uups",
+    initializer: "initialize",
+  });
 
-  const stakingContract = await StakingContractFactory.deploy(MIN_VALIDATOR_COUNT, MAX_VALIDATOR_COUNT);
-
-  console.log("Contract address:", stakingContract.address);
+  console.log("Contract address:", staking.address);
 }
 
 main()
