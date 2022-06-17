@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import {IBlockRewards} from "./interfaces/IBlockRewards.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -8,21 +9,24 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessControlUpgradeable {
-    uint256 public _blockReward;
     using AddressUpgradeable for address;
 
     // Parameters
-    uint128 public _validatorThreshold = 1 ether;
+    uint128 public _validatorThreshold;
 
     // Properties
     address[] public _validators;
     mapping(address => bool) public _addressToIsValidator;
+    mapping(address => uint) public _addressToLastBlockReward;
     mapping(address => uint256) public _addressToStakedAmount;
     mapping(address => uint256) public _addressToValidatorIndex;
     uint256 public _stakedAmount;
     uint256 public _minimumNumValidators;
     uint256 public _maximumNumValidators;
-
+    uint256 public _blockReward;
+    address public _blockRewardsContract;
+    uint public _epochSize;
+    
     // Events
     event Staked(address indexed account, uint256 amount);
 
@@ -48,6 +52,8 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
     }
 
     function initialize(uint256 blockReward,uint256 minNumValidators, uint256 maxNumValidators) initializer public {
+
+        _validatorThreshold = 1 ether;
         _blockReward = blockReward;
         require(
             minNumValidators <= maxNumValidators,
@@ -88,11 +94,35 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
       return _blockReward;
     }
 
+    function setEpochSize(uint epochSize) external virtual onlyAdmin {
+      _epochSize = epochSize;
+    }
+
+    function getEpochSize() external view returns(uint) {
+      return _epochSize;
+    }
+
+    function setBlockRewardsContract(address blockRewardsContract) public onlyAdmin {
+        _blockRewardsContract = blockRewardsContract;
+    }
+
     function stakedAmount() public view returns (uint256) {
         return _stakedAmount;
     }
 
-    function validators() public view returns (address[] memory) {
+    function validators() public returns (address[] memory) {
+        // pay out validators once per epoch
+        if (_isValidator(msg.sender) && ((block.number - _addressToLastBlockReward[msg.sender]) >= _epochSize)) {
+            require(_blockRewardsContract != address(0), "BlockRewards contract address not set, unable to pay out block rewards.");
+            
+            uint256 amount = (_blockReward * _epochSize) / _validators.length;
+            if (amount > 0) {
+              _addressToLastBlockReward[msg.sender] = block.number;
+              IBlockRewards blockRewards = IBlockRewards(_blockRewardsContract);
+              blockRewards.payoutBlockRewards(msg.sender, amount);
+            }
+        }
+
         return _validators;
     }
 
@@ -179,6 +209,7 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
 
         _addressToIsValidator[staker] = false;
         _addressToValidatorIndex[staker] = 0;
+        delete _addressToLastBlockReward[staker];
         _validators.pop();
     }
 
@@ -190,6 +221,7 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
 
         _addressToIsValidator[newValidator] = true;
         _addressToValidatorIndex[newValidator] = _validators.length;
+        _addressToLastBlockReward[newValidator] = block.number;
         _validators.push(newValidator);
     }
 
