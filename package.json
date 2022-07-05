@@ -9,7 +9,7 @@
     "deploy": "hardhat run scripts/staking/deploy.ts --network polygonedge",
     "upgrade": "hardhat run scripts/staking/upgrade.ts --network polygonedge",
     "deploy-rewards": "hardhat run scripts/block-rewards/deploy.ts --network polygonedge",
-    "stake": "hardhat run scripts/staking/stake.ts --network polygonedge",
+    "stake": "hardhat run scripts/staking/stake.ts",
     "transfer": "hardhat run scripts/staking/transfer.ts --network polygonedge",
     "unstake": "hardhat run scripts/staking/unstake.ts --network polygonedge",
     "info": "hardhat run scripts/staking/info.ts --network polygonedge",

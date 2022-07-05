@@ -11,7 +11,7 @@ async function main() {
 
   const StakingContractFactory = await ethers.getContractFactory("Staking");
   let stakingContract = await StakingContractFactory.attach(STAKING_CONTRACT_ADDRESS) as Staking;
-  stakingContract = stakingContract.connect(deployer);
+  stakingContract = stakingContract.connect(val1);
 
   const tx = await stakingContract.unstake()
   const receipt = await tx.wait();

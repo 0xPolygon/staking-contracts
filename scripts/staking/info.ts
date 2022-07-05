@@ -7,29 +7,28 @@ const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS ?? '0x0000
 async function main() {
   console.log("Check current contract information");
 
-  const [deployer, val1, val2, val3, val4] = await ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
 
-  const StakingContractFactory = await ethers.getContractFactory("SXPoS");
+  //const StakingContractFactory = await ethers.getContractFactory("SXPoS");
+  const StakingContractFactory = await ethers.getContractFactory("Staking");
   let stakingContract = await StakingContractFactory.attach(STAKING_CONTRACT_ADDRESS) as SXPoS;
   stakingContract = stakingContract.connect(deployer);
 
-  const [stakedAmount, validators, minimumNumValidators, maximumNumValidators, blockReward, epochSize, addressMap] = await Promise.all([
+  const [stakedAmount, validators, minimumNumValidators, maximumNumValidators/*, blockReward, epochSize*/] = await Promise.all([
     stakingContract.stakedAmount(),
-    stakingContract.callStatic.validators(),
+    stakingContract.validators(),
     stakingContract.minimumNumValidators(),
     stakingContract.maximumNumValidators(),
-    stakingContract.getBlockReward(),
-    stakingContract.getEpochSize(),
-    stakingContract._addressToLastBlockReward('0x30b3eCF398eEB21D038Ba6a9221BD40255B4fE04')
+    //stakingContract.getBlockReward(),
+   // stakingContract.getEpochSize()
   ])
 
   console.log(`Total staked amount: ${stakedAmount.toString()}`)
   console.log('Minimum number of validators', minimumNumValidators.toNumber());
   console.log('Maximum number of validators', maximumNumValidators.toNumber());
   console.log('Current validators list', validators);
-  console.log('Current epoch block reward', blockReward);
-  console.log('Current epoch size', epochSize);
-  console.log(JSON.stringify(addressMap))
+  //console.log('Current epoch block reward', blockReward);
+  //console.log('Current epoch size', epochSize)
 
 }
 

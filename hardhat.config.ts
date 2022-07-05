@@ -42,6 +42,10 @@ const config: HardhatUserConfig = {
         }
       ],
     },
+    hamilton: {
+      url: process.env.JSONRPC_URL_HAMILTON,
+      accounts: [...process.env.PRIVATE_KEYS_HAMILTON!.split(",")]
+    },
     toronto: {
       url: "https://rpc.toronto.sx.technology",
       accounts: [...privateKeys],

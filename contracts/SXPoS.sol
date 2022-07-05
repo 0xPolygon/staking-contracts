@@ -110,19 +110,7 @@ contract SXPoS is Initializable, UUPSUpgradeable, OwnableUpgradeable,AccessContr
         return _stakedAmount;
     }
 
-    function validators() public returns (address[] memory) {
-        // pay out validators once per epoch
-        if (_isValidator(msg.sender) && ((block.number - _addressToLastBlockReward[msg.sender]) >= _epochSize)) {
-            require(_blockRewardsContract != address(0), "BlockRewards contract address not set, unable to pay out block rewards.");
-            
-            uint256 amount = (_blockReward * _epochSize) / _validators.length;
-            if (amount > 0) {
-              _addressToLastBlockReward[msg.sender] = block.number;
-              IBlockRewards blockRewards = IBlockRewards(_blockRewardsContract);
-              blockRewards.payoutBlockRewards(msg.sender, amount);
-            }
-        }
-
+    function validators() public view returns (address[] memory)  {
         return _validators;
     }
 
