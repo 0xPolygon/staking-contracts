@@ -10,12 +10,15 @@ contract Staking {
 
     // Properties
     address[] public _validators;
+
     mapping(address => bool) public _addressToIsValidator;
     mapping(address => uint256) public _addressToStakedAmount;
     mapping(address => uint256) public _addressToValidatorIndex;
     uint256 public _stakedAmount;
     uint256 public _minimumNumValidators;
     uint256 public _maximumNumValidators;
+
+    bytes[] public _validatorBLSPublicKeys;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -36,6 +39,11 @@ contract Staking {
         _;
     }
 
+    modifier onlyValidator() {
+        require(_isValidator(msg.sender), "Only validator can call function");
+        _;
+    }
+
     constructor(uint256 minNumValidators, uint256 maxNumValidators) {
         require(
             minNumValidators <= maxNumValidators,
@@ -52,6 +60,10 @@ contract Staking {
 
     function validators() public view returns (address[] memory) {
         return _validators;
+    }
+
+    function validatorBLSPublicKeys() public view returns (bytes[] memory) {
+        return _validatorBLSPublicKeys;
     }
 
     function isValidator(address addr) public view returns (bool) {
@@ -81,6 +93,11 @@ contract Staking {
 
     function unstake() public onlyEOA onlyStaker {
         _unstake();
+    }
+
+    function registerBLSPublicKey(bytes memory blsPubKey) public onlyValidator {
+        uint256 index = _addressToValidatorIndex[msg.sender];
+        _validatorBLSPublicKeys[index] = blsPubKey;
     }
 
     // Private functions
