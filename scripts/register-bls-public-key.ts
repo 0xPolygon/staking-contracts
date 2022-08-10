@@ -2,26 +2,26 @@ import { ethers } from "hardhat";
 import { Staking } from "../types/Staking";
 
 const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS ?? "";
-const STAKE_AMOUNT = ethers.utils.parseEther("1");
+const BLS_PUBLIC_KEY = process.env.BLS_PUBLIC_KEY ?? "";
 
 async function main() {
   const [account] = await ethers.getSigners();
 
   console.log(
-    `Stake: address=${STAKING_CONTRACT_ADDRESS}, account=${account.address}`
+    `Register BLS Public Key: address=${STAKING_CONTRACT_ADDRESS}, account=${account.address}, key=${BLS_PUBLIC_KEY}`
   );
   console.log(`Account balance: ${(await account.getBalance()).toString()}`);
 
-  const StakingContractFactory = await ethers.getContractFactory("Staking");
-  let stakingContract = (await StakingContractFactory.attach(
-    STAKING_CONTRACT_ADDRESS
+  const stakingContract = (await ethers.getContractAt(
+    "Staking",
+    STAKING_CONTRACT_ADDRESS,
+    account
   )) as Staking;
-  stakingContract = stakingContract.connect(account);
 
-  const tx = await stakingContract.stake({ value: STAKE_AMOUNT });
+  const tx = await stakingContract.registerBLSPublicKey(BLS_PUBLIC_KEY);
   const receipt = await tx.wait();
 
-  console.log("Staked", tx.hash, receipt);
+  console.log("Registered", tx.hash, receipt);
 }
 
 main()

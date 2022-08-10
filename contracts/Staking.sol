@@ -18,7 +18,7 @@ contract Staking {
     uint256 public _minimumNumValidators;
     uint256 public _maximumNumValidators;
 
-    bytes[] public _validatorBLSPublicKeys;
+    mapping(address => bytes) public _addressToBLSPublicKey;
 
     // Events
     event Staked(address indexed account, uint256 amount);
@@ -63,7 +63,13 @@ contract Staking {
     }
 
     function validatorBLSPublicKeys() public view returns (bytes[] memory) {
-        return _validatorBLSPublicKeys;
+        bytes[] memory keys = new bytes[](_validators.length);
+
+        for (uint256 i = 0; i < _validators.length; i++) {
+            keys[i] = _addressToBLSPublicKey[_validators[i]];
+        }
+
+        return keys;
     }
 
     function isValidator(address addr) public view returns (bool) {
@@ -95,9 +101,8 @@ contract Staking {
         _unstake();
     }
 
-    function registerBLSPublicKey(bytes memory blsPubKey) public onlyValidator {
-        uint256 index = _addressToValidatorIndex[msg.sender];
-        _validatorBLSPublicKeys[index] = blsPubKey;
+    function registerBLSPublicKey(bytes memory blsPubKey) public {
+        _addressToBLSPublicKey[msg.sender] = blsPubKey;
     }
 
     // Private functions
