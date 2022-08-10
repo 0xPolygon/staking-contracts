@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 
-const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS ?? "0x0000000000000000000000000000000000001001";
+const SXNODE_CONTRACT_ADDRESS = process.env.SXNODE_CONTRACT_ADDRESS ?? "0x0000000000000000000000000000000000001001";
 const STAKE_AMOUNT = ethers.utils.parseEther("1");
 
 async function main() {
@@ -11,13 +11,13 @@ async function main() {
     "from",
     account.address,
     "to",
-    STAKING_CONTRACT_ADDRESS
+    SXNODE_CONTRACT_ADDRESS
   );
   console.log("Account balance:", (await account.getBalance()).toString());
 
   const tx = await account.sendTransaction({
     from: account.address,
-    to: STAKING_CONTRACT_ADDRESS,
+    to: SXNODE_CONTRACT_ADDRESS,
     value: STAKE_AMOUNT,
     nonce: await account.getTransactionCount(),
     gasLimit: "0x100000",
