@@ -12,11 +12,11 @@ async function main() {
   );
   console.log(`Account balance: ${(await account.getBalance()).toString()}`);
 
-  const StakingContractFactory = await ethers.getContractFactory("Staking");
-  let stakingContract = (await StakingContractFactory.attach(
-    STAKING_CONTRACT_ADDRESS
+  const stakingContract = (await ethers.getContractAt(
+    "Staking",
+    STAKING_CONTRACT_ADDRESS,
+    account
   )) as Staking;
-  stakingContract = stakingContract.connect(account);
 
   const tx = await stakingContract.stake({ value: STAKE_AMOUNT });
   const receipt = await tx.wait();
