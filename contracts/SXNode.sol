@@ -22,7 +22,7 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     uint public _validatorsLastSetBlock;
     uint public _epochSize;
 
-    bytes32 public _hashedReport; //TODO: temporary for testing, delete this
+    address public _lastSigner; //TODO: temporary for testing, delete this
     mapping(bytes32 => LibOutcome.Outcome) private _reportedOutcomes;
     mapping(bytes32 => uint256) private _reportTime;
 
@@ -114,13 +114,13 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     ) external onlyValidator notAlreadyReported(marketHash) {
 
       ReportPayload memory reportPayload = ReportPayload(marketHash, uint8(reportedOutcome), epoch, timestamp);
-      _hashedReport = keccak256(abi.encode(reportPayload.marketHash, reportPayload.outcome, reportPayload.epoch, reportPayload.timestamp));
+      bytes32 hashedReport = keccak256(abi.encode(reportPayload.marketHash, reportPayload.outcome, reportPayload.epoch, reportPayload.timestamp));
 
-
+      _lastSigner = recoverSigner(hashedReport, bytes(signatures[0]));
       //TODO: 1. test onlyValidator and notAlreadyReported modifiers
-      //TODO: 2. ensure hashed is identical to how we hash on edge nodes (using temporary getLatestReportHash getter)
+      //TODO: 2. ensure hashed is identical to how we hash on edge nodes (using temporary getLastSigner getter)
       //TODO: 3. consider signatures and _validators to ensure that:
-      //TODO:    a) all signatures are unique and correspond to publicKeys that are part of the current _validators
+      //TODO:    a) all signatures are unique and correspond to addresses that are part of the current _validators
       //TODO:      i) when providing the keccaked payload with each unhashed signature, we should get all public keys and therefore addresses involved
       //TODO:    b) at least 2/3 signatures when compared to the total _validators
       //TODO:      i) for case where _validators has more than chain validators, hopefully 2/3 should still work - luckily we wont be modifying our set too often
@@ -143,8 +143,41 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     }
 
     //TODO: temporary for testing, delete this
-    function getLatestReportHash() public view returns (bytes32) {
-      return _hashedReport;
+    function getLastSigner() public view returns (address) {
+      return _lastSigner;
+    }
+
+    // see https://programtheblockchain.com/posts/2018/02/17/signing-and-verifying-messages-in-ethereum/
+    function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address)
+    {
+      uint8 v;
+      bytes32 r;
+      bytes32 s;
+
+      (v, r, s) = splitSignature(sig);
+
+      return ecrecover(message, v, r, s);
+    }
+
+    // see https://programtheblockchain.com/posts/2018/02/17/signing-and-verifying-messages-in-ethereum/
+    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32)
+    {
+      require(sig.length == 65);
+
+      bytes32 r;
+      bytes32 s;
+      uint8 v;
+
+      assembly {
+          // first 32 bytes, after the length prefix
+          r := mload(add(sig, 32))
+          // second 32 bytes
+          s := mload(add(sig, 64))
+          // final byte (first byte of the next 32 bytes)
+          v := byte(0, mload(add(sig, 96)))
+      }
+
+      return (v, r, s);
     }
    
     function getVersion() public pure virtual returns (string memory) {

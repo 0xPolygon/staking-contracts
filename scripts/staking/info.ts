@@ -15,8 +15,8 @@ async function main() {
 
   const validators = await sxNodeContract.getValidators()
   console.log('validators: ', validators)
-  const outcome = await sxNodeContract.getOutcome()
-  console.log('outcome: ', outcome)
+  const lastSigner = await sxNodeContract.getLastSigner()
+  console.log('signer: ', lastSigner)
 }
 
 main()
