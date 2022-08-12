@@ -15,8 +15,12 @@ async function main() {
 
   const validators = await sxNodeContract.getValidators()
   console.log('validators: ', validators)
-  const lastSigner = await sxNodeContract.getLastSigner()
-  console.log('signer: ', lastSigner)
+  const signer = await sxNodeContract.getSigner()
+  console.log('signer: ', signer)
+  const sigBytes = await sxNodeContract.sigBytes()
+  console.log('sigBytes: ', sigBytes)
+  const hashedReport = await sxNodeContract.hashedReport()
+  console.log('hashedReport: ', hashedReport)
 }
 
 main()

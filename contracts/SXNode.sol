@@ -22,7 +22,10 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     uint public _validatorsLastSetBlock;
     uint public _epochSize;
 
-    address public _lastSigner; //TODO: temporary for testing, delete this
+    address public _signer; //TODO: temporary for testing, delete this
+    bytes public _sigBytes; //TODO: temporary for testing, delete this
+    bytes32 public _hashedReport; //TODO: temporary for testing, delete this
+
     mapping(bytes32 => LibOutcome.Outcome) private _reportedOutcomes;
     mapping(bytes32 => uint256) private _reportTime;
 
@@ -110,13 +113,25 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       LibOutcome.Outcome reportedOutcome,
       uint64 epoch, 
       uint256 timestamp,
-      string[] memory signatures
+      bytes[] memory signatures
     ) external onlyValidator notAlreadyReported(marketHash) {
 
-      ReportPayload memory reportPayload = ReportPayload(marketHash, uint8(reportedOutcome), epoch, timestamp);
-      bytes32 hashedReport = keccak256(abi.encode(reportPayload.marketHash, reportPayload.outcome, reportPayload.epoch, reportPayload.timestamp));
+      bytes32 reportHashed = keccak256(
+        abi.encodePacked(
+          marketHash, 
+          reportedOutcome, 
+          epoch, 
+          timestamp
+          )
+        );
+      
+      _hashedReport = reportHashed;
 
-      _lastSigner = recoverSigner(hashedReport, bytes(signatures[0]));
+      _sigBytes = signatures[0];
+      _signer = recoverSigner(reportHashed, signatures[0]);
+      
+      
+
       //TODO: 1. test onlyValidator and notAlreadyReported modifiers
       //TODO: 2. ensure hashed is identical to how we hash on edge nodes (using temporary getLastSigner getter)
       //TODO: 3. consider signatures and _validators to ensure that:
@@ -143,10 +158,21 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     }
 
     //TODO: temporary for testing, delete this
-    function getLastSigner() public view returns (address) {
-      return _lastSigner;
+    function getSigner() public view returns (address) {
+      return _signer;
     }
 
+     //TODO: temporary for testing, delete this
+    function sigBytes() public view returns (bytes memory) {
+      return _sigBytes;
+    }
+
+     //TODO: temporary for testing, delete this
+    function hashedReport() public view returns (bytes32) {
+      return _hashedReport;
+    }
+
+    // see https://gitlab.com/nextgenbt/betx/sportx-contracts/-/blob/master/contracts/libraries/LibOrder.sol#L78
     // see https://programtheblockchain.com/posts/2018/02/17/signing-and-verifying-messages-in-ethereum/
     function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address)
     {
