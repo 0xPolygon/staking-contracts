@@ -7,14 +7,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-library LibOutcome {
-  enum Outcome {
-    VOID,
-    OUTCOME_ONE,
-    OUTCOME_TWO
-  }
-}
-
 contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessControlUpgradeable {
     using AddressUpgradeable for address;
 
@@ -25,18 +17,13 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     address public _signer; //TODO: temporary for testing, delete this
     bytes public _sigBytes; //TODO: temporary for testing, delete this
     bytes32 public _hashedReport; //TODO: temporary for testing, delete this
+    int32 public _reportedOutcome; //TODO: temporary for testing, delete this
+    address public _lastReporter; //TODO: temporary for testing, delete this
 
-    mapping(bytes32 => LibOutcome.Outcome) private _reportedOutcomes;
+    mapping(bytes32 => int64) private _reportedOutcomes;
     mapping(bytes32 => uint256) private _reportTime;
 
-    event OutcomeReported(bytes32 marketHash, LibOutcome.Outcome outcome);
-
-    struct ReportPayload {
-      bytes32 marketHash;
-      uint8 outcome;
-      uint64 epoch;
-      uint256 timestamp;
-    }  
+    event OutcomeReported(bytes32 marketHash, int32 outcome);
     
     // Modifiers
     modifier onlyAdmin() {
@@ -47,7 +34,7 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     /// @notice Throws if the msg.sender is not part of current _validators list
     modifier onlyValidator() {
       bool isValidator = false;
-      for(uint256 i; i < _validators.length; i++) {
+      for(uint i; i < _validators.length; i++) {
         if (_validators[i] == msg.sender) {
           isValidator = true;
           break;
@@ -110,46 +97,60 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     // called by sxnode service once majority of validator sigs has been met
     function reportOutcome(
       bytes32 marketHash, 
-      LibOutcome.Outcome reportedOutcome,
+      int32 outcome,
       uint64 epoch, 
       uint256 timestamp,
-      bytes[] memory signatures
+      bytes[] calldata signatures
     ) external onlyValidator notAlreadyReported(marketHash) {
 
-      bytes32 reportHashed = keccak256(
-        abi.encodePacked(
-          marketHash, 
-          reportedOutcome, 
-          epoch, 
-          timestamp
-          )
-        );
+      bytes32 reportHashed = keccak256(abi.encode(
+        marketHash,
+        outcome,
+        epoch, 
+        timestamp
+      ));
       
+      //TODO: temporary just for testing
+      _reportedOutcome = outcome;
       _hashedReport = reportHashed;
-
       _sigBytes = signatures[0];
       _signer = recoverSigner(reportHashed, signatures[0]);
       
-      
+      address[] memory sigAddresses = new address[](signatures.length);
+      uint16 sigCounter = 0;
+      for (uint i=0; i < signatures.length; i++) {
+        address signer = recoverSigner(reportHashed, signatures[i]);
+        for (uint j=0; j < sigAddresses.length; j++) {
+          require(signer != sigAddresses[j], "signatures array must be unique");
+        }
+        sigAddresses[i] = signer;
 
-      //TODO: 1. test onlyValidator and notAlreadyReported modifiers
-      //TODO: 2. ensure hashed is identical to how we hash on edge nodes (using temporary getLastSigner getter)
-      //TODO: 3. consider signatures and _validators to ensure that:
-      //TODO:    a) all signatures are unique and correspond to addresses that are part of the current _validators
-      //TODO:      i) when providing the keccaked payload with each unhashed signature, we should get all public keys and therefore addresses involved
-      //TODO:    b) at least 2/3 signatures when compared to the total _validators
-      //TODO:      i) for case where _validators has more than chain validators, hopefully 2/3 should still work - luckily we wont be modifying our set too often
-      //TODO:      ii) for case where _validators has less than chain validators, hopefully 2/3 should still work - luckily we wont be modifying our set too often
-      //TODO:      iii) we should ensure to only vote on / off max 1 validator per epoch
-      //TODO: 4. other validation? e.g. team names exist, etc
+        //TODO: better to maintain mapping for _validators
+        bool isSigValidator = false;
+        for (uint k=0; k < _validators.length; k++) {
+          if (_validators[k] == signer) {
+            isSigValidator = true;
+            break;
+          }
+        }
+        require(isSigValidator, "all signatures must belong to current validator set");
+        sigCounter++;
+      }
+      // validators => minSigs: 4 => 3 | 5,6 => 4 | 7 => 5 | 8,9 => 6 | ...
+      uint r = _validators.length % 3;
+      uint minSigs = 2 * (uint(_validators.length) / 3) + r;
+      require(sigCounter >= minSigs, "not enough signatures");
 
-      _reportedOutcomes[marketHash] = reportedOutcome;
+      //TODO: perform any other validation now that we are done verifying signatures...
+
+      _reportedOutcomes[marketHash] = outcome;
       _reportTime[marketHash] = block.timestamp;
+      _lastReporter = msg.sender;
 
-      emit OutcomeReported(marketHash, reportedOutcome);
+      emit OutcomeReported(marketHash, outcome);
     }
 
-    function getReportedOutcome(bytes32 marketHash) public view returns (LibOutcome.Outcome) {
+    function getReportedOutcome(bytes32 marketHash) public view returns (int64) {
       return _reportedOutcomes[marketHash];
     }
 
@@ -167,13 +168,22 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       return _sigBytes;
     }
 
-     //TODO: temporary for testing, delete this
+    //TODO: temporary for testing, delete this
+    function reportedOutcome() public view returns (int32) {
+      return _reportedOutcome;
+    }
+
+    //TODO: temporary for testing, delete this
     function hashedReport() public view returns (bytes32) {
       return _hashedReport;
     }
 
-    // see https://gitlab.com/nextgenbt/betx/sportx-contracts/-/blob/master/contracts/libraries/LibOrder.sol#L78
-    // see https://programtheblockchain.com/posts/2018/02/17/signing-and-verifying-messages-in-ethereum/
+    //TODO: temporary for testing, delete this
+    function lastReporter() public view returns (address) {
+      return _lastReporter;
+    }
+
+    // recoverSigner splits signature and calls ecrecover on the message hash
     function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address)
     {
       uint8 v;
@@ -182,10 +192,15 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
 
       (v, r, s) = splitSignature(sig);
 
+      // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+      if (v < 27) {
+          v += 27;
+      }
+
       return ecrecover(message, v, r, s);
     }
 
-    // see https://programtheblockchain.com/posts/2018/02/17/signing-and-verifying-messages-in-ethereum/
+    // splits signature into v,r,s
     function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32)
     {
       require(sig.length == 65);

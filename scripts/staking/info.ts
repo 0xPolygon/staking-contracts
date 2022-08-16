@@ -15,12 +15,16 @@ async function main() {
 
   const validators = await sxNodeContract.getValidators()
   console.log('validators: ', validators)
-  const signer = await sxNodeContract.getSigner()
-  console.log('signer: ', signer)
-  const sigBytes = await sxNodeContract.sigBytes()
-  console.log('sigBytes: ', sigBytes)
+  const lastReporter = await sxNodeContract.lastReporter()
+  console.log('last reporter: ', lastReporter)
+  const reportedOutcome = await sxNodeContract.reportedOutcome()
   const hashedReport = await sxNodeContract.hashedReport()
   console.log('hashedReport: ', hashedReport)
+  console.log('1st reportedOutcome: ', reportedOutcome)
+  const signer = await sxNodeContract.getSigner()
+  console.log('1st signer: ', signer)
+  const sigBytes = await sxNodeContract.sigBytes()
+  console.log('1st sigBytes: ', sigBytes)
 }
 
 main()
