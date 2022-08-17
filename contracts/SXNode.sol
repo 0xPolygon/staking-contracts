@@ -18,10 +18,12 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     bytes public _sigBytes; //TODO: temporary for testing, delete this
     bytes32 public _hashedReport; //TODO: temporary for testing, delete this
     int32 public _reportedOutcome; //TODO: temporary for testing, delete this
-    address public _lastReporter; //TODO: temporary for testing, delete this
+    address public _lastReporter; //TODO: temporary for testing, delete 
 
     mapping(bytes32 => int64) private _reportedOutcomes;
     mapping(bytes32 => uint256) private _reportTime;
+
+    bytes32 public _lastMarketHash; //TODO: temporary for testing, delete 
 
     event OutcomeReported(bytes32 marketHash, int32 outcome);
     
@@ -86,6 +88,8 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       require(block.number % _epochSize == 0, "Validator set can only be updated at end of an epoch");
       _validatorsLastSetBlock = block.number;
       _validators = addresses;
+
+      //TODO: see if possbile to also set the currenet epoch here along with the addresses?
     }
    
    // gets the validators
@@ -111,10 +115,12 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       ));
       
       //TODO: temporary just for testing
+      _lastMarketHash = marketHash;
       _reportedOutcome = outcome;
       _hashedReport = reportHashed;
       _sigBytes = signatures[0];
       _signer = recoverSigner(reportHashed, signatures[0]);
+      _lastReporter = msg.sender;
       
       address[] memory sigAddresses = new address[](signatures.length);
       uint16 sigCounter = 0;
@@ -145,7 +151,6 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
 
       _reportedOutcomes[marketHash] = outcome;
       _reportTime[marketHash] = block.timestamp;
-      _lastReporter = msg.sender;
 
       emit OutcomeReported(marketHash, outcome);
     }
@@ -181,6 +186,11 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     //TODO: temporary for testing, delete this
     function lastReporter() public view returns (address) {
       return _lastReporter;
+    }
+
+    //TODO: temporary for testing, delete this
+    function lastMarketHash() public view returns (bytes32) {
+      return _lastMarketHash;
     }
 
     // recoverSigner splits signature and calls ecrecover on the message hash
