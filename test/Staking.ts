@@ -301,4 +301,48 @@ describe("Staking and Unstaking", function () {
       );
     });
   });
+
+  describe("Register BLS Public Key", () => {
+    it("should succeed and register BLS Public Key", async () => {
+      const data = "0x12345678"
+      const tx = contract.connect(accounts[0]).registerBLSPublicKey(
+        data,
+      )
+
+      await expect(tx)
+      .to.emit(contract, "BLSPublicKeyRegistered")
+      .withArgs(accounts[0].address, data);
+    })
+  });
+
+  describe("Get BLS Public Keys", () => {
+    const numValidators = 5;
+    const numRegisteredAccounts = 10;
+    const stakedAmount = ethers.utils.parseEther("1");
+    const blsPublicKeys = new Array(numRegisteredAccounts).fill(null).map((_, idx) => (
+      BigNumber.from(idx).toHexString()
+    ))
+
+    beforeEach(async () => {
+      // set required number of validators
+      await Promise.all(
+        accounts
+          .slice(0, numValidators)
+          .map((account) => stake(account, stakedAmount))
+      );
+
+      await Promise.all(
+        accounts.splice(0, numRegisteredAccounts)
+        .map((account, i) => contract.connect(account).registerBLSPublicKey(
+          blsPublicKeys[i]
+        ))
+      )
+    });
+
+    it("should return only the BLS Public Keys of Validators", async () => {
+      expect(await contract.validatorBLSPublicKeys())
+        .to.have.length(numValidators)
+        .and.to.deep.equal(blsPublicKeys.slice(0, numValidators));
+    })
+  });
 });

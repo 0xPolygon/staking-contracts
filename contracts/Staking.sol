@@ -25,6 +25,8 @@ contract Staking {
 
     event Unstaked(address indexed account, uint256 amount);
 
+    event BLSPublicKeyRegistered(address indexed accout, bytes key);
+
     // Modifiers
     modifier onlyEOA() {
         require(!msg.sender.isContract(), "Only EOA can call function");
@@ -103,6 +105,8 @@ contract Staking {
 
     function registerBLSPublicKey(bytes memory blsPubKey) public {
         _addressToBLSPublicKey[msg.sender] = blsPubKey;
+
+        emit BLSPublicKeyRegistered(msg.sender, blsPubKey);
     }
 
     // Private functions
