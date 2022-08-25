@@ -7,8 +7,12 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessControlUpgradeable {
+/// @title OutcomeReporter
+/// @notice Handles outcomes reported by SX Network validator nodes
+contract OutcomeReporter is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessControlUpgradeable {
     using AddressUpgradeable for address;
+
+    address private _SXNode;
 
     address[] public _validators;
     uint public _validatorsLastSetBlock;
@@ -19,50 +23,40 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
     bytes32 public _hashedReport; //TODO: temporary for testing, delete this
     int32 public _reportedOutcome; //TODO: temporary for testing, delete this
     address public _lastReporter; //TODO: temporary for testing, delete 
+    bytes32 public _lastMarketHash; //TODO: temporary for testing, delete 
 
     mapping(bytes32 => int64) private _reportedOutcomes;
     mapping(bytes32 => uint256) private _reportTime;
 
-    bytes32 public _lastMarketHash; //TODO: temporary for testing, delete 
-
     event OutcomeReported(bytes32 marketHash, int32 outcome);
     
-    // Modifiers
+    /// @notice Throws if the sender does not have admin role, set on initialize
     modifier onlyAdmin() {
-      require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Sender doesn't have admin role");
+      require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Sender doesn't have admin role");
       _;
     }
 
-    /// @notice Throws if the msg.sender is not part of current _validators list
-    modifier onlyValidator() {
-      bool isValidator = false;
-      for(uint i; i < _validators.length; i++) {
-        if (_validators[i] == msg.sender) {
-          isValidator = true;
-          break;
-        }
-      }
-      require(isValidator, "Sender must be part of the validator set");
-      _;
-    }
-
-    /// @notice Throws if the msg.sender is not zero address
-    modifier onlyZeroAddress() {
-      require(msg.sender == address(0), "Sender must be zero address");
+    /// @notice Throws if the sender is not the SXNode contract
+    modifier onlySXNode() {
+      require(_SXNode != address(0), "SXNode address not set!");
+      require(_SXNode == _msgSender(), "Sender must be SXNode contract");
       _;
     }
 
     /// @notice Throws if the market is already reported
-    /// @param marketHash The market to check.
+    /// @param marketHash The market to check
     modifier notAlreadyReported(bytes32 marketHash) {
       require(_reportTime[marketHash] == 0, "MARKET_ALREADY_REPORTED");
       _;
     }
 
-    function initialize(address[] memory initialValidators) public initializer {
+    /// @notice initialize function
+    /// @param initialValidators The initial validators to set
+    /// @param sxNode The SXNode address used by onlySXNode modifier
+    function initialize(address[] memory initialValidators, address sxNode) public initializer {
       _validators = initialValidators;
+      _SXNode = sxNode;
       _validatorsLastSetBlock = 0;
-      _epochSize = 100;
       
       __Ownable_init();
       __UUPSUpgradeable_init();
@@ -71,48 +65,40 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    // sets the epoch size which is used to restrict the setValidators() function
-    function setEpochSize(uint epochSize) external virtual onlyAdmin {
-      _epochSize = epochSize;
+    /// @notice Gets the current version, useful during upgrades
+    function getVersion() public pure virtual returns (string memory) {
+      return "V1";
     }
 
-    // gets the epoch size
-    function getEpochSize() external view returns(uint) {
-      return _epochSize;
+    /// @notice Sets the SXNode contract address
+    /// @param sxNode The SXNode contract address used by onlySXNode modifier.
+    function setSXNodeAddress(address sxNode) public onlyAdmin {
+      _SXNode = sxNode;
     }
 
-    // sets the validators once per epoch as derived from the latest snapshot validator set
-    // called by sxnode service preStateCommitHook
-    function setValidators(address[] memory addresses) public onlyZeroAddress {
+    /// @notice Sets the validators once per epoch to match the latest snapshot validator set
+    /// @notice Called by SXNode
+    function setValidators(address[] memory addresses) public onlySXNode {
       require(block.number > _validatorsLastSetBlock, "Validator set cannot be updated more than once per block");
-      require(block.number % _epochSize == 0, "Validator set can only be updated at end of an epoch");
       _validatorsLastSetBlock = block.number;
       _validators = addresses;
-
-      //TODO: see if possbile to also set the currenet epoch here along with the addresses?
     }
    
-   // gets the validators
+    /// @notice Gets the list of validators set at the last epoch
     function getValidators() public view returns(address[] memory) {
       return _validators;
     }
 
-    // sets the signed reporting payload
-    // called by sxnode service once majority of validator sigs has been met
-    function reportOutcome(
-      bytes32 marketHash, 
-      int32 outcome,
-      uint64 epoch, 
-      uint256 timestamp,
-      bytes[] calldata signatures
-    ) external onlyValidator notAlreadyReported(marketHash) {
-
-      bytes32 reportHashed = keccak256(abi.encode(
-        marketHash,
-        outcome,
-        epoch, 
-        timestamp
-      ));
+    /// @notice Sets the signed reporting payload
+    /// @notice Called by SXNode
+    /// @param marketHash The market to report
+    /// @param outcome The outcome to report
+    /// @param epoch The epoch of the report payload
+    /// @param timestamp The timestamp of the report payload
+    /// @param signatures The array containing the quorum of validator signatures for consensus
+    function reportOutcome(bytes32 marketHash, int32 outcome, uint64 epoch, uint256 timestamp, bytes[] calldata signatures) 
+        external onlySXNode notAlreadyReported(marketHash) {
+      bytes32 reportHashed = keccak256(abi.encode(marketHash, outcome, epoch, timestamp));
       
       //TODO: temporary just for testing
       _lastMarketHash = marketHash;
@@ -120,7 +106,7 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       _hashedReport = reportHashed;
       _sigBytes = signatures[0];
       _signer = recoverSigner(reportHashed, signatures[0]);
-      _lastReporter = msg.sender;
+      _lastReporter = _msgSender();
       
       address[] memory sigAddresses = new address[](signatures.length);
       uint16 sigCounter = 0;
@@ -131,7 +117,7 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
         }
         sigAddresses[i] = signer;
 
-        //TODO: better to maintain mapping for _validators
+        //TODO: better to maintain mapping for _validators for faster indexing?
         bool isSigValidator = false;
         for (uint k=0; k < _validators.length; k++) {
           if (_validators[k] == signer) {
@@ -142,7 +128,12 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
         require(isSigValidator, "all signatures must belong to current validator set");
         sigCounter++;
       }
-      // validators => minSigs: 4 => 3 | 5,6 => 4 | 7 => 5 | 8,9 => 6 | ...
+      // validators => minSigs: 
+      // 4 => 3
+      // 5,6 => 4
+      // 7 => 5
+      // 8,9 => 6
+      // ...
       uint r = _validators.length % 3;
       uint minSigs = 2 * (uint(_validators.length) / 3) + r;
       require(sigCounter >= minSigs, "not enough signatures");
@@ -155,11 +146,15 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       emit OutcomeReported(marketHash, outcome);
     }
 
+    /// @notice Gets the reported outcome for the specified marketHash
+    /// @param marketHash The market to report
     function getReportedOutcome(bytes32 marketHash) public view returns (int64) {
       return _reportedOutcomes[marketHash];
     }
 
-    function get_reportTime(bytes32 marketHash) public view returns (uint256) {
+    /// @notice Gets the reported outcome timestamp for the specified marketHash
+    /// @param marketHash The market to report
+    function getReportTime(bytes32 marketHash) public view returns (uint256) {
       return _reportTime[marketHash];
     }
 
@@ -193,9 +188,10 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       return _lastMarketHash;
     }
 
-    // recoverSigner splits signature and calls ecrecover on the message hash
-    function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address)
-    {
+    /// @notice Splits signature and calls ecrecover on the message hash
+    /// @param message The keccak256 abi encoded report payload
+    /// @param sig The signature of a validator
+    function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
       uint8 v;
       bytes32 r;
       bytes32 s;
@@ -210,28 +206,24 @@ contract SXNode is Initializable, UUPSUpgradeable, OwnableUpgradeable, AccessCon
       return ecrecover(message, v, r, s);
     }
 
-    // splits signature into v,r,s
-    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32)
-    {
-      require(sig.length == 65);
+    /// @notice Splits signature into v,r,s
+    /// @param sig The signature of a validator
+    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
+      require(sig.length == 65, "Signature length must be 65");
 
       bytes32 r;
       bytes32 s;
       uint8 v;
 
       assembly {
-          // first 32 bytes, after the length prefix
-          r := mload(add(sig, 32))
-          // second 32 bytes
-          s := mload(add(sig, 64))
-          // final byte (first byte of the next 32 bytes)
-          v := byte(0, mload(add(sig, 96)))
+        // first 32 bytes, after the length prefix
+        r := mload(add(sig, 32))
+        // second 32 bytes
+        s := mload(add(sig, 64))
+        // final byte (first byte of the next 32 bytes)
+        v := byte(0, mload(add(sig, 96)))
       }
 
       return (v, r, s);
-    }
-   
-    function getVersion() public pure virtual returns (string memory) {
-      return "V1";
     }
 }
