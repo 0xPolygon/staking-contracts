@@ -10,6 +10,7 @@
     "stake": "hardhat run scripts/stake.ts --network polygonedge",
     "transfer": "hardhat run scripts/transfer.ts --network polygonedge",
     "unstake": "hardhat run scripts/unstake.ts --network polygonedge",
+    "register-blskey": "hardhat run scripts/register-bls-key.ts --network polygonedge",
     "info": "hardhat run scripts/info.ts --network polygonedge",
     "test": "npx hardhat test",
     "clean": "npx hardhat clean",
